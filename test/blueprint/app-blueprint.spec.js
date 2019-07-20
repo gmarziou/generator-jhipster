@@ -2,10 +2,6 @@ const path = require('path');
 const assert = require('yeoman-assert');
 const helpers = require('yeoman-test');
 const fse = require('fs-extra');
-const CommonGenerator = require('../../generators/common');
-const ServerGenerator = require('../../generators/server');
-const ClientGenerator = require('../../generators/client');
-const createBlueprintMockForSubgen = require('../utils/utils').createBlueprintMockForSubgen;
 const expectedFiles = require('../utils/expected-files');
 const getFilesForOptions = require('../utils/utils').getFilesForOptions;
 const angularFiles = require('../../generators/client/files-angular').files;
@@ -43,17 +39,10 @@ describe('JHipster application generator with blueprint', () => {
                     databaseType: 'sql',
                     devDatabaseType: 'h2Memory',
                     prodDatabaseType: 'mysql',
-                    useSass: false,
                     enableTranslation: true,
                     nativeLanguage: 'en',
                     languages: ['fr']
                 })
-                .withGenerators([
-                    [helpers.createDummyGenerator(), 'jhipster-myblueprint:'],
-                    [createBlueprintMockForSubgen(CommonGenerator), 'jhipster-myblueprint:common'],
-                    [createBlueprintMockForSubgen(ServerGenerator), 'jhipster-myblueprint:server'],
-                    [createBlueprintMockForSubgen(ClientGenerator), 'jhipster-myblueprint:client']
-                ])
                 .on('end', done);
         });
 
@@ -62,7 +51,6 @@ describe('JHipster application generator with blueprint', () => {
             assert.file(expectedFiles.server);
             assert.file(
                 getFilesForOptions(angularFiles, {
-                    useSass: false,
                     enableTranslation: true,
                     serviceDiscoveryType: false,
                     authenticationType: 'jwt',
@@ -72,7 +60,9 @@ describe('JHipster application generator with blueprint', () => {
         });
 
         it('blueprint version is saved in .yo-rc.json', () => {
-            assert.fileContent('.yo-rc.json', /"blueprintVersion": "9.9.9"/);
+            assert.JSONFileContent('.yo-rc.json', {
+                'generator-jhipster': { blueprints: [{ name: 'generator-jhipster-myblueprint', version: '9.9.9' }] }
+            });
         });
         it('blueprint module and version are in package.json', () => {
             assert.fileContent('package.json', /"generator-jhipster-myblueprint": "9.9.9"/);

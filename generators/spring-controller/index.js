@@ -27,11 +27,12 @@ const statistics = require('../statistics');
 const SERVER_MAIN_SRC_DIR = constants.SERVER_MAIN_SRC_DIR;
 const SERVER_TEST_SRC_DIR = constants.SERVER_TEST_SRC_DIR;
 
-let useBlueprint;
+let useBlueprints;
 
 module.exports = class extends BaseBlueprintGenerator {
     constructor(args, opts) {
         super(args, opts);
+        this.configOptions = this.options.configOptions || {};
         this.argument('name', { type: String, required: true });
         this.name = this.options.name;
         // This adds support for a `--from-cli` flag
@@ -47,18 +48,7 @@ module.exports = class extends BaseBlueprintGenerator {
         });
         this.defaultOption = this.options.default;
 
-        const blueprint = this.config.get('blueprint');
-        if (!opts.fromBlueprint) {
-            // use global variable since getters dont have access to instance property
-            useBlueprint = this.composeBlueprint(blueprint, 'spring-controller', {
-                'from-cli': this.options['from-cli'],
-                force: this.options.force,
-                arguments: [this.name],
-                default: this.options.default
-            });
-        } else {
-            useBlueprint = false;
-        }
+        useBlueprints = !opts.fromBlueprint && this.instantiateBlueprints('spring-controller', { arguments: [this.name] });
     }
 
     // Public API method used by the getter and also by Blueprints
@@ -75,6 +65,10 @@ module.exports = class extends BaseBlueprintGenerator {
                 this.packageName = configuration.get('packageName');
                 this.packageFolder = configuration.get('packageFolder');
                 this.databaseType = configuration.get('databaseType');
+                this.messageBroker = configuration.get('messageBroker') === 'no' ? false : configuration.get('messageBroker');
+                if (this.messageBroker === undefined) {
+                    this.messageBroker = false;
+                }
                 this.reactiveController = false;
                 this.applicationType = configuration.get('applicationType');
                 this.reactive = configuration.get('reactive');
@@ -85,7 +79,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get initializing() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._initializing();
     }
 
@@ -97,7 +91,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get prompting() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._prompting();
     }
 
@@ -111,7 +105,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get default() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._default();
     }
 
@@ -166,15 +160,15 @@ module.exports = class extends BaseBlueprintGenerator {
                 this.template(
                     `${this.fetchFromInstalledJHipster(
                         'spring-controller/templates'
-                    )}/${SERVER_TEST_SRC_DIR}package/web/rest/ResourceIntTest.java.ejs`,
-                    `${SERVER_TEST_SRC_DIR}${this.packageFolder}/web/rest/${this.controllerClass}IntTest.java`
+                    )}/${SERVER_TEST_SRC_DIR}package/web/rest/ResourceIT.java.ejs`,
+                    `${SERVER_TEST_SRC_DIR}${this.packageFolder}/web/rest/${this.controllerClass}IT.java`
                 );
             }
         };
     }
 
     get writing() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._writing();
     }
 };

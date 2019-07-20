@@ -157,7 +157,7 @@ function cleanupOldServerFiles(generator, javaDir, testDir, mainResourceDir, tes
         generator.removeFile(`${mainResourceDir}mails/passwordResetEmail.html`);
         generator.removeFile(`${mainResourceDir}mails/socialRegistrationValidationEmail.html`);
         generator.removeFile(`${testResourceDir}mail/testEmail.html`);
-        generator.removeFile(`${testDir}web/rest/ProfileInfoResourceIntTest.java`);
+        generator.removeFile(`${testDir}web/rest/ProfileInfoResourceIT.java`);
         generator.removeFile('gradle/mapstruct.gradle');
     }
     if (generator.isJhipsterVersionLessThan('5.2.2')) {
@@ -171,5 +171,27 @@ function cleanupOldServerFiles(generator, javaDir, testDir, mainResourceDir, tes
     }
     if (generator.isJhipsterVersionLessThan('5.8.0')) {
         generator.removeFile(`${javaDir}config/MetricsConfiguration.java`);
+        if (generator.databaseType === 'cassandra') {
+            generator.removeFile(`${testResourceDir}cassandra-random-port.yml`);
+        }
+    }
+    if (generator.isJhipsterVersionLessThan('6.0.0')) {
+        generator.removeFile(`${javaDir}web/rest/errors/CustomParameterizedException.java`);
+        generator.removeFile(`${javaDir}web/rest/errors/InternalServerErrorException.java`);
+        generator.removeFile(`${javaDir}web/rest/util/PaginationUtil.java`);
+        generator.removeFile(`${javaDir}web/rest/util/HeaderUtil.java`);
+        generator.removeFile(`${testDir}web/rest/util/PaginationUtilUnitTest.java`);
+        generator.removeFile(`${javaDir}web/rest/vm/LoggerVM.java`);
+        generator.removeFile(`${javaDir}web/rest/LogsResource.java`);
+        generator.removeFile(`${testDir}web/rest/LogsResourceIT.java`);
+        generator.removeFile(`${javaDir}config/OAuth2Configuration.java`);
+        generator.removeFile(`${javaDir}security/OAuth2AuthenticationSuccessHandler.java`);
+
+        generator.removeFolder(`${CLIENT_MAIN_SRC_DIR}app/shared/layout/header/menus`);
+        generator.removeFolder(`${CLIENT_TEST_SRC_DIR}spec/app/shared/layout/header/menus`);
+    }
+    if (generator.isJhipsterVersionLessThan('6.1.0')) {
+        generator.config.delete('blueprint');
+        generator.config.delete('blueprintVersion');
     }
 }

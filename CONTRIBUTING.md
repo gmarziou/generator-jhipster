@@ -6,6 +6,7 @@ Are you ready to contribute to JHipster? We'd love to have you on board, and we 
 -   [Issues and Bugs](#issue)
 -   [Bug bounties](#bounties)
 -   [Feature Requests](#feature)
+-   [RFCs](#rfcs)
 -   [Submission Guidelines](#submit)
 -   [Generator development setup](#setup)
 -   [Coding Rules](#rules)
@@ -27,15 +28,35 @@ If you find a bug in the source code or a mistake in the documentation, you can 
 
 ## <a name="bounties"></a> Bug bounties
 
-If you submitted a Pull Request that fixes a ticket with the "$100" tag, then you are eligible to our bug bounty program! Go to our [bug bounties documentation](https://www.jhipster.tech/bug-bounties/) for more information, and claim your money.
+If you submitted a Pull Request that fixes a ticket with the "\$100" tag, then you are eligible to our bug bounty program! Go to our [bug bounties documentation](https://www.jhipster.tech/bug-bounties/) for more information, and claim your money.
 
 ## <a name="feature"></a> Feature Requests
 
 You can request a new feature by submitting a ticket to our [GitHub issues](https://github.com/jhipster/generator-jhipster/issues). If you
 would like to implement a new feature then consider what kind of change it is:
 
--   **Major Changes** that you wish to contribute to the project should be discussed first. Please open a ticket which clearly states that it is a feature request in the title and explain clearly what you want to achieve in the description, and the JHipster team will discuss with you what should be done in that ticket. You can then start working on a Pull Request.
+-   **Major Changes** that you wish to contribute to the project should be discussed first. Please open a ticket which clearly states that it is a feature request in the title and explain clearly what you want to achieve in the description, and the JHipster team will discuss with you what should be done in that ticket. You can then start working on a Pull Request. In order to communicate major changes proposals and receive reviews from the core team, you can also submit an RFC.
 -   **Small Changes** can be proposed without any discussion. Open up a ticket which clearly states that it is a feature request in the title. Explain your change in the description, and you can propose a Pull Request straight away.
+
+## <a name="rfcs"></a> RFCs
+
+Sometimes, major feature requests are "complex" or "substantial". In this case, Github Issues might not be the best tool to to present them because we will need a lot of going back and forth to reach a consensus.
+
+So we ask that these feature request be put through a formal design process and have their specifications described in an "RFC" (request for comments) that will be validated by the team through a Pull Request Review.
+
+The RFC process is intended to provide a consistent and controlled path for major features and directions of the project.
+
+To submit an RFC follow those steps:
+
+1. Discuss the RFC proposal with the core team through Github issues or other channels
+2. Create the initial Github issue for the Feature Request if it doesn't already exist
+3. Copy the `rfcs/0-jhipster-rfc-template.md` to `rfcs/${featureRequestIssueNumber}-my-feature-request-name.md`
+4. Fill in the RFC, make sure to complete every required section
+5. Submit the RFC as a Pull Request with the summary of the proposal in the PR description
+6. Build consensus and integrate feedback from the reviewers
+7. The Pull Request is either accepted (merged), rejected (closed) or postponed (given an "on hold" status)
+
+Note: The JHipster RFC process is inspired by [Rust RFCs](https://rust-lang.github.io/rfcs/).
 
 ## <a name="submit"></a> Submission Guidelines
 
@@ -272,7 +293,7 @@ To ensure consistency throughout the source code, keep these rules in mind as yo
 -   Java files **must be** formatted using Intellij IDEA default code style.
 -   Generators JavaScript files **must follow** the eslint configuration defined at the project root, which is based on [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript).
 -   Any client side feature/change should be done for both Angular and react clients
--   Web apps JavaScript files **must follow** [Google's JavaScript Style Guide](https://google-styleguide.googlecode.com/svn/trunk/javascriptguide.xml).
+-   Web apps JavaScript files **must follow** [Google's JavaScript Style Guide](https://google.github.io/styleguide/jsguide.html).
 -   Angular Typescript files **must follow** the [Official Angular style guide](https://angular.io/styleguide).
 -   React/Redux Typescript files **may follow** the [React/Redux Typescript guide](https://github.com/piotrwitek/react-redux-typescript-guide).
 

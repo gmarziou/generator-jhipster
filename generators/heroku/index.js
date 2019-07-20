@@ -49,6 +49,7 @@ module.exports = class extends BaseGenerator {
 
         this.herokuSkipBuild = this.options['skip-build'];
         this.herokuSkipDeploy = this.options['skip-deploy'] || this.options['skip-build'];
+        this.registerPrettierTransform();
     }
 
     initializing() {
@@ -66,9 +67,7 @@ module.exports = class extends BaseGenerator {
         this.packageName = this.config.get('packageName');
         this.packageFolder = this.config.get('packageFolder');
         this.cacheProvider = this.config.get('cacheProvider') || this.config.get('hibernateCache') || 'no';
-        this.enableHibernateCache =
-            this.config.get('enableHibernateCache') ||
-            (this.config.get('hibernateCache') !== undefined && this.config.get('hibernateCache') !== 'no');
+        this.enableHibernateCache = this.config.get('enableHibernateCache') && !['no', 'memcached'].includes(this.cacheProvider);
         this.databaseType = this.config.get('databaseType');
         this.prodDatabaseType = this.config.get('prodDatabaseType');
         this.searchEngine = this.config.get('searchEngine');
@@ -500,7 +499,7 @@ module.exports = class extends BaseGenerator {
                 const done = this.async();
                 this.log(chalk.bold('\nBuilding application'));
 
-                const child = this.buildApplication(this.buildTool, 'prod', err => {
+                const child = this.buildApplication(this.buildTool, 'prod', false, err => {
                     if (err) {
                         this.abort = true;
                         this.log.error(err);
@@ -623,14 +622,14 @@ module.exports = class extends BaseGenerator {
                     });
                 } else {
                     this.log(chalk.bold('\nDeploying application'));
-                    let warFileWildcard = 'target/*.war';
+                    let jarFileWildcard = 'target/*.jar';
                     if (this.buildTool === 'gradle') {
-                        warFileWildcard = 'build/libs/*.war';
+                        jarFileWildcard = 'build/libs/*.jar';
                     }
 
-                    const files = glob.sync(warFileWildcard, {});
-                    const warFile = files[0];
-                    const herokuDeployCommand = `heroku deploy:jar ${warFile} --app ${this.herokuAppName}`;
+                    const files = glob.sync(jarFileWildcard, {});
+                    const jarFile = files[0];
+                    const herokuDeployCommand = `heroku deploy:jar ${jarFile} --app ${this.herokuAppName}`;
 
                     this.log(
                         chalk.bold(

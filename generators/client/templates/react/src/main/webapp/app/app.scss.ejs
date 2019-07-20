@@ -17,14 +17,21 @@
  limitations under the License.
 -%>
 // Override Boostrap variables
-@import 'bootstrap-variables';
+<%_ if (clientTheme !== 'none') {_%>
+@import "~bootswatch/dist/<%= clientTheme %>/variables";
+<%_ } _%>
 // Import Bootstrap source files from node_modules
 @import "node_modules/bootstrap/scss/bootstrap";
+<%_ if (clientTheme !== 'none') { _%>
+@import "~bootswatch/dist/<%= clientTheme %>/bootswatch";
+<%_ } _%>
 <%_ if (enableI18nRTL) { _%>
 @import 'rtl.scss';
 <%_ } _%>
 body {
+  <%_ if (clientTheme === 'none') { _%>
   background: #fafafa;
+  <%_ } _%>
   margin: 0;
 }
 
@@ -336,4 +343,4 @@ http://stackoverflow.com/questions/23436430/bootstrap-3-input-group-100-width */
   margin-top: -0.5rem;
 }
 
-/* jhipster-needle-css-add-main JHipster will add new css style */
+/* jhipster-needle-scss-add-main JHipster will add new css style */

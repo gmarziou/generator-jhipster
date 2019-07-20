@@ -19,6 +19,7 @@
 const _ = require('lodash');
 const randexp = require('randexp');
 const chalk = require('chalk');
+const faker = require('faker');
 const fs = require('fs');
 const utils = require('../utils');
 const constants = require('../generator-constants');
@@ -29,6 +30,9 @@ const SERVER_MAIN_SRC_DIR = constants.SERVER_MAIN_SRC_DIR;
 const SERVER_MAIN_RES_DIR = constants.SERVER_MAIN_RES_DIR;
 const TEST_DIR = constants.TEST_DIR;
 const SERVER_TEST_SRC_DIR = constants.SERVER_TEST_SRC_DIR;
+
+// In order to have consistent results with Faker, the seed is fixed.
+faker.seed(42);
 
 /**
  * The default is to use a file path string. It implies use of the template method.
@@ -44,6 +48,17 @@ const serverFiles = {
                     file: 'config/liquibase/changelog/added_entity.xml',
                     options: { interpolate: INTERPOLATE_REGEX },
                     renameTo: generator => `config/liquibase/changelog/${generator.changelogDate}_added_entity_${generator.entityClass}.xml`
+                },
+                {
+                    file: 'config/liquibase/fake-data/table.csv',
+                    options: {
+                        interpolate: INTERPOLATE_REGEX,
+                        context: {
+                            faker,
+                            randexp
+                        }
+                    },
+                    renameTo: generator => `config/liquibase/fake-data/${generator.entityTableName}.csv`
                 }
             ]
         },
@@ -60,6 +75,17 @@ const serverFiles = {
                         `config/liquibase/changelog/${generator.changelogDate}_added_entity_constraints_${generator.entityClass}.xml`
                 }
             ]
+        },
+        {
+            condition: generator =>
+                generator.databaseType === 'sql' && (generator.fieldsContainImageBlob === true || generator.fieldsContainBlob === true),
+            path: SERVER_MAIN_RES_DIR,
+            templates: [{ file: 'config/liquibase/fake-data/blob/hipster.png', method: 'copy', noEjs: true }]
+        },
+        {
+            condition: generator => generator.databaseType === 'sql' && generator.fieldsContainTextBlob === true,
+            path: SERVER_MAIN_RES_DIR,
+            templates: [{ file: 'config/liquibase/fake-data/blob/hipster.txt', method: 'copy' }]
         },
         {
             condition: generator => generator.databaseType === 'cassandra',
@@ -174,7 +200,7 @@ const serverFiles = {
             path: SERVER_TEST_SRC_DIR,
             templates: [
                 {
-                    file: 'package/web/rest/EntityResourceIntTest.java',
+                    file: 'package/web/rest/EntityResourceIT.java',
                     options: {
                         context: {
                             randexp,
@@ -184,7 +210,7 @@ const serverFiles = {
                             SERVER_TEST_SRC_DIR
                         }
                     },
-                    renameTo: generator => `${generator.packageFolder}/web/rest/${generator.entityClass}ResourceIntTest.java`
+                    renameTo: generator => `${generator.packageFolder}/web/rest/${generator.entityClass}ResourceIT.java`
                 }
             ]
         },

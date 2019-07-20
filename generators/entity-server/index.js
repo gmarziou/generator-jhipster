@@ -22,27 +22,21 @@ const utils = require('../utils');
 const BaseBlueprintGenerator = require('../generator-base-blueprint');
 
 /* constants used throughout */
-let useBlueprint;
+let useBlueprints;
 
 module.exports = class extends BaseBlueprintGenerator {
     constructor(args, opts) {
         super(args, opts);
         utils.copyObjectProps(this, opts.context);
+        this.jhipsterContext = opts.jhipsterContext || opts.context;
+        this.configOptions = opts.configOptions || {};
         if (this.databaseType === 'cassandra') {
             this.pkType = 'UUID';
         }
-        const blueprint = this.config.get('blueprint');
-        if (!opts.fromBlueprint) {
-            // use global variable since getters dont have access to instance property
-            useBlueprint = this.composeBlueprint(blueprint, 'entity-server', {
-                context: opts.context,
-                force: opts.force,
-                debug: opts.context.isDebugEnabled,
-                'from-cli': opts.context.options['from-cli']
-            });
-        } else {
-            useBlueprint = false;
-        }
+
+        useBlueprints =
+            !opts.fromBlueprint &&
+            this.instantiateBlueprints('entity-server', { context: opts.context, debug: opts.context.isDebugEnabled });
     }
 
     // Public API method used by the getter and also by Blueprints
@@ -51,7 +45,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get writing() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._writing();
     }
 };

@@ -24,10 +24,11 @@ const statistics = require('../statistics');
 
 const SERVER_MAIN_SRC_DIR = constants.SERVER_MAIN_SRC_DIR;
 
-let useBlueprint;
+let useBlueprints;
 module.exports = class extends BaseBlueprintGenerator {
     constructor(args, opts) {
         super(args, opts);
+        this.configOptions = this.options.configOptions || {};
         this.argument('name', { type: String, required: true });
         this.name = this.options.name;
         // This adds support for a `--from-cli` flag
@@ -43,18 +44,7 @@ module.exports = class extends BaseBlueprintGenerator {
         });
         this.defaultOption = this.options.default;
 
-        const blueprint = this.config.get('blueprint');
-        if (!opts.fromBlueprint) {
-            // use global variable since getters dont have access to instance property
-            useBlueprint = this.composeBlueprint(blueprint, 'spring-service', {
-                'from-cli': this.options['from-cli'],
-                force: this.options.force,
-                arguments: [this.name],
-                default: this.options.default
-            });
-        } else {
-            useBlueprint = false;
-        }
+        useBlueprints = !opts.fromBlueprint && this.instantiateBlueprints('spring-service', { arguments: [this.name] });
     }
 
     // Public API method used by the getter and also by Blueprints
@@ -76,7 +66,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get initializing() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._initializing();
     }
 
@@ -106,7 +96,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get prompting() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._prompting();
     }
 
@@ -120,7 +110,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get default() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._default();
     }
 
@@ -149,7 +139,7 @@ module.exports = class extends BaseBlueprintGenerator {
     }
 
     get writing() {
-        if (useBlueprint) return;
+        if (useBlueprints) return;
         return this._writing();
     }
 };

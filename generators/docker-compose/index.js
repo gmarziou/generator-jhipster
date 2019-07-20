@@ -24,6 +24,11 @@ const writeFiles = require('./files').writeFiles;
 const BaseDockerGenerator = require('../generator-base-docker');
 
 module.exports = class extends BaseDockerGenerator {
+    constructor(args, opts) {
+        super(args, opts);
+        this.registerPrettierTransform();
+    }
+
     get initializing() {
         return {
             ...super.initializing,
@@ -76,7 +81,7 @@ module.exports = class extends BaseDockerGenerator {
 
             setAppsYaml() {
                 this.appsYaml = [];
-                this.keycloakRedirectUri = '';
+                this.keycloakRedirectUris = '';
                 let portIndex = 8080;
                 this.serverPort = portIndex;
                 this.appsFolders.forEach((appsFolder, index) => {
@@ -90,7 +95,7 @@ module.exports = class extends BaseDockerGenerator {
                     if (this.gatewayType === 'traefik' && appConfig.applicationType === 'gateway') {
                         delete yamlConfig.ports; // Do not export the ports as Traefik is the gateway
                     } else if (appConfig.applicationType === 'gateway' || appConfig.applicationType === 'monolith') {
-                        this.keycloakRedirectUri += `"http://localhost:${portIndex}/*", `;
+                        this.keycloakRedirectUris += `"http://localhost:${portIndex}/*", "https://localhost:${portIndex}/*", `;
                         const ports = yamlConfig.ports[0].split(':');
                         ports[0] = portIndex;
                         yamlConfig.ports[0] = ports.join(':');
@@ -103,11 +108,6 @@ module.exports = class extends BaseDockerGenerator {
                         yamlConfig.environment.push('JHIPSTER_LOGGING_LOGSTASH_HOST=jhipster-logstash');
                         yamlConfig.environment.push('JHIPSTER_METRICS_LOGS_ENABLED=true');
                         yamlConfig.environment.push('JHIPSTER_METRICS_LOGS_REPORT_FREQUENCY=60');
-                    }
-
-                    if (this.monitoring === 'prometheus') {
-                        yamlConfig.environment.push('JHIPSTER_METRICS_PROMETHEUS_ENABLED=true');
-                        yamlConfig.environment.push('JHIPSTER_METRICS_PROMETHEUS_ENDPOINT=/prometheusMetrics');
                     }
 
                     if (this.serviceDiscoveryType === 'eureka') {
