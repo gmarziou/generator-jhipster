@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -56,9 +56,9 @@ module.exports = class extends PrivateBase {
      * @param {boolean} enableTranslation - If translations are enabled or not
      * @param {string} clientFramework - The name of the client framework
      */
-    addElementToMenu(routerName, glyphiconName, enableTranslation, clientFramework) {
+    addElementToMenu(routerName, glyphiconName, enableTranslation, clientFramework, translationKeyMenu = _.camelCase(routerName)) {
         if (clientFramework === 'angularX') {
-            this.needleApi.clientAngular.addElementToMenu(routerName, glyphiconName, enableTranslation);
+            this.needleApi.clientAngular.addElementToMenu(routerName, glyphiconName, enableTranslation, translationKeyMenu);
         } else if (clientFramework === 'react') {
             // React
             // TODO:
@@ -83,9 +83,9 @@ module.exports = class extends PrivateBase {
      * @param {boolean} enableTranslation - If translations are enabled or not
      * @param {string} clientFramework - The name of the client framework
      */
-    addElementToAdminMenu(routerName, glyphiconName, enableTranslation, clientFramework) {
+    addElementToAdminMenu(routerName, glyphiconName, enableTranslation, clientFramework, translationKeyMenu = _.camelCase(routerName)) {
         if (clientFramework === 'angularX') {
-            this.needleApi.clientAngular.addElementToAdminMenu(routerName, glyphiconName, enableTranslation);
+            this.needleApi.clientAngular.addElementToAdminMenu(routerName, glyphiconName, enableTranslation, translationKeyMenu);
         } else if (clientFramework === 'react') {
             // React
             // TODO:
@@ -620,9 +620,10 @@ module.exports = class extends PrivateBase {
      *
      * @param {string} id - id of the repository
      * @param {string} url - url of the repository
+     * @param  {string} other - (optional) explicit other thing: name, releases, snapshots, ...
      */
-    addMavenRepository(id, url) {
-        this.needleApi.serverMaven.addRepository(id, url);
+    addMavenRepository(id, url, other = '') {
+        this.needleApi.serverMaven.addRepository(id, url, other);
     }
 
     /**
@@ -692,6 +693,18 @@ module.exports = class extends PrivateBase {
      */
     addMavenPlugin(groupId, artifactId, version, other) {
         this.needleApi.serverMaven.addPlugin(groupId, artifactId, version, other);
+    }
+
+    /**
+     * Add a new Maven plugin management.
+     *
+     * @param {string} groupId - plugin groupId
+     * @param {string} artifactId - plugin artifactId
+     * @param {string} version - explicit plugin version number
+     * @param {string} other - explicit other thing: executions, configuration...
+     */
+    addMavenPluginManagement(groupId, artifactId, version, other) {
+        this.needleApi.serverMaven.addPluginManagement(groupId, artifactId, version, other);
     }
 
     /**
@@ -795,7 +808,21 @@ module.exports = class extends PrivateBase {
      * Generate a date to be used by Liquibase changelogs.
      */
     dateFormatForLiquibase() {
-        const now = new Date();
+        let now = new Date();
+        // Run reproducible timestamp when regenerating the project with with-entities option.
+        if (this.options.withEntities || this.options.creationTimestamp) {
+            if (this.configOptions.lastLiquibaseTimestamp) {
+                // Counter already started.
+                now = this.configOptions.lastLiquibaseTimestamp;
+            } else {
+                // Create a new counter
+                const creationTimestamp = this.parseCreationTimestamp() || this.config.get('creationTimestamp');
+                now = creationTimestamp ? new Date(creationTimestamp) : now;
+            }
+            now.setMinutes(now.getMinutes() + 1);
+            this.configOptions.lastLiquibaseTimestamp = now;
+        }
+
         const nowUTC = new Date(
             now.getUTCFullYear(),
             now.getUTCMonth(),
@@ -863,8 +890,7 @@ module.exports = class extends PrivateBase {
                         /(,[\s]*(resolve):[\s]*[{][\s]*(translatePartialLoader)['a-zA-Z0-9$,(){.<%=\->;\s:[\]]*(;[\s]*\}\][\s]*\}))/, // ng1 resolve block
                         /([\s]import\s\{\s?JhiLanguageService\s?\}\sfrom\s["|']ng-jhipster["|'];)/, // ng2 import jhiLanguageService
                         /(,?\s?JhiLanguageService,?\s?)/, // ng2 import jhiLanguageService
-                        /(private\s[a-zA-Z0-9]*(L|l)anguageService\s?:\s?JhiLanguageService\s?,*[\s]*)/, // ng2 jhiLanguageService constructor argument
-                        /(this\.[a-zA-Z0-9]*(L|l)anguageService\.setLocations\(\[['"a-zA-Z0-9\-_,\s]+\]\);[\s]*)/ // jhiLanguageService invocations
+                        /(private\s[a-zA-Z0-9]*(L|l)anguageService\s?:\s?JhiLanguageService\s?,*[\s]*)/ // ng2 jhiLanguageService constructor argument
                     ]
                         .map(r => r.source)
                         .join('|'),
@@ -942,10 +968,11 @@ module.exports = class extends PrivateBase {
      * @param {string} filePath - path of the source file to rewrite
      * @param {string} needle - needle to look for where content will be inserted
      * @param {string} content - content to be written
+     * @returns {boolean} true if the body has changed.
      */
     rewriteFile(filePath, needle, content) {
         const rewriteFileModel = this.needleApi.base.generateFileModel(filePath, needle, content);
-        this.needleApi.base.addBlockContentToFile(rewriteFileModel);
+        return this.needleApi.base.addBlockContentToFile(rewriteFileModel);
     }
 
     /**
@@ -955,10 +982,11 @@ module.exports = class extends PrivateBase {
      * @param {string} pattern - pattern to look for where content will be replaced
      * @param {string} content - content to be written
      * @param {string} regex - true if pattern is regex
+     * @returns {boolean} true if the body has changed.
      */
     replaceContent(filePath, pattern, content, regex) {
         try {
-            jhipsterUtils.replaceContent(
+            return jhipsterUtils.replaceContent(
                 {
                     file: filePath,
                     pattern,
@@ -972,6 +1000,7 @@ module.exports = class extends PrivateBase {
                 chalk.yellow('\nUnable to find ') + filePath + chalk.yellow(' or missing required pattern. File rewrite failed.\n') + e
             );
             this.debug('Error:', e);
+            return false;
         }
     }
 
@@ -1153,6 +1182,7 @@ module.exports = class extends PrivateBase {
         context.skipCheckLengthOfIdentifier = context.fileData.skipCheckLengthOfIdentifier || context.skipCheckLengthOfIdentifier;
         context.jhiTablePrefix = this.getTableName(context.jhiPrefix);
         context.skipClient = context.fileData.skipClient || context.skipClient;
+        context.readOnly = context.fileData.readOnly || false;
         this.copyFilteringFlag(context.fileData, context, context);
         if (_.isUndefined(context.entityTableName)) {
             this.warning(`entityTableName is missing in .jhipster/${context.name}.json, using entity name as fallback`);
@@ -1256,11 +1286,11 @@ module.exports = class extends PrivateBase {
      * @param {string} version - A valid semver version string
      */
     isJhipsterVersionLessThan(version) {
-        const jhipsterVersion = this.config.get('jhipsterVersion');
-        if (!jhipsterVersion) {
-            return true;
+        if (!this.jhipsterOldVersion) {
+            // if old version is unknown then can't compare and return false
+            return false;
         }
-        return semver.lt(jhipsterVersion, version);
+        return semver.lt(this.jhipsterOldVersion, version);
     }
 
     /**
@@ -1641,19 +1671,7 @@ module.exports = class extends PrivateBase {
      * @param {string} baseName of application
      */
     getHipster(baseName = this.baseName) {
-        let hash = 0;
-        let i;
-        let chr;
-
-        for (i = 0; i < baseName.length; i++) {
-            chr = baseName.charCodeAt(i);
-            hash = (hash << 5) - hash + chr; // eslint-disable-line no-bitwise
-            hash |= 0; // eslint-disable-line no-bitwise
-        }
-
-        if (hash < 0) {
-            hash *= -1;
-        }
+        const hash = jhipsterUtils.stringHashCode(baseName);
 
         switch (hash % 4) {
             case 0:
@@ -1781,9 +1799,10 @@ module.exports = class extends PrivateBase {
      * @param {String} profile - dev | prod
      * @param {Boolean} buildWar - build a war instead of a jar
      * @param {Function} cb - callback when build is complete
+     * @returns {object} the command line and its result
      */
     buildApplication(buildTool, profile, buildWar, cb) {
-        let buildCmd = 'mvnw verify -DskipTests=true -B';
+        let buildCmd = 'mvnw -ntp verify -DskipTests=true -B';
 
         if (buildTool === 'gradle') {
             buildCmd = 'gradlew -x test';
@@ -1801,11 +1820,37 @@ module.exports = class extends PrivateBase {
             buildCmd = `./${buildCmd}`;
         }
         buildCmd += ` -P${profile}`;
-        const child = {};
-        child.stdout = exec(buildCmd, { maxBuffer: 1024 * 10000 }, cb).stdout;
-        child.buildCmd = buildCmd;
+        return {
+            stdout: exec(buildCmd, { maxBuffer: 1024 * 10000 }, cb).stdout,
+            buildCmd
+        };
+    }
 
-        return child;
+    /**
+     * run a command using the configured Java build tool.
+     *
+     * @param {String} buildTool - maven | gradle
+     * @param {String} profile - dev | prod
+     * @param {String} command - the command (goal/task) to run
+     * @param {Function} cb - callback when build is complete
+     * @returns {object} the command line and its result
+     */
+    runJavaBuildCommand(buildTool, profile, command, cb) {
+        let buildCmd = `mvnw -ntp -DskipTests=true -B ${command}`;
+
+        if (buildTool === 'gradle') {
+            buildCmd = `gradlew -x ${command}`;
+        }
+
+        if (os.platform() !== 'win32') {
+            buildCmd = `./${buildCmd}`;
+        }
+        buildCmd += ` -P${profile}`;
+        this.log(`Running command: '${chalk.bold(buildCmd)}'`);
+        return {
+            stdout: exec(buildCmd, { maxBuffer: 1024 * 10000 }, cb).stdout,
+            buildCmd
+        };
     }
 
     /**
@@ -1874,6 +1919,10 @@ module.exports = class extends PrivateBase {
         return filesOut;
     }
 
+    setupAppOptions(generator, context = generator, dest = context) {
+        this.setupSharedOptions(generator, context, dest);
+    }
+
     /**
      * Setup shared level options from context.
      * all variables should be set to dest,
@@ -1894,6 +1943,7 @@ module.exports = class extends PrivateBase {
         dest.clientPackageManager = context.configOptions.clientPackageManager;
         dest.isDebugEnabled = context.configOptions.isDebugEnabled || context.options.debug;
         dest.experimental = context.configOptions.experimental || context.options.experimental;
+        dest.embeddableLaunchScript = context.configOptions.embeddableLaunchScript || false;
 
         const uaaBaseName = context.configOptions.uaaBaseName || context.options['uaa-base-name'] || context.config.get('uaaBaseName');
         if (dest.authenticationType === 'uaa' && _.isNil(uaaBaseName)) {

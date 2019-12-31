@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -106,6 +106,13 @@ class EntityGenerator extends BaseBlueprintGenerator {
             defaults: false
         });
 
+        // This adds support for a `--skip-db-changelog` flag
+        this.option('skip-db-changelog', {
+            desc: 'Skip the generation of database changelog (liquibase for sql databases)',
+            type: Boolean,
+            defaults: false
+        });
+
         // This adds support for a `--db` flag
         this.option('db', {
             desc: 'Provide DB option for the application when using skip-server flag',
@@ -155,6 +162,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 context.databaseType = configuration.get('databaseType') || this.getDBTypeFromDBValue(this.options.db);
                 context.prodDatabaseType = configuration.get('prodDatabaseType') || this.options.db;
                 context.devDatabaseType = configuration.get('devDatabaseType') || this.options.db;
+                context.skipFakeData = configuration.get('skipFakeData');
                 context.searchEngine = configuration.get('searchEngine');
                 context.messageBroker = configuration.get('messageBroker') === 'no' ? false : configuration.get('messageBroker');
                 context.enableTranslation = configuration.get('enableTranslation');
@@ -166,6 +174,8 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 context.jhiPrefixDashed = _.kebabCase(context.jhiPrefix);
                 context.jhiTablePrefix = this.getTableName(context.jhiPrefix);
                 context.testFrameworks = configuration.get('testFrameworks');
+                // preserve old jhipsterVersion value for cleanup which occurs after new config is written into disk
+                this.jhipsterOldVersion = configuration.get('jhipsterVersion');
                 // backward compatibility on testing frameworks
                 if (context.testFrameworks === undefined) {
                     context.testFrameworks = ['gatling'];
@@ -190,6 +200,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 context.skipClient =
                     context.applicationType === 'microservice' || this.options['skip-client'] || configuration.get('skipClient');
                 context.skipServer = this.options['skip-server'] || configuration.get('skipServer');
+                context.skipDbChangelog = this.options['skip-db-changelog'] || configuration.get('skipDbChangelog');
 
                 context.angularAppName = this.getAngularAppName(context.baseName);
                 context.angularXAppName = this.getAngularXAppName(context.baseName);
@@ -224,6 +235,12 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 }
 
                 context.CLIENT_MAIN_SRC_DIR = constants.CLIENT_MAIN_SRC_DIR;
+            },
+
+            validateMvcApp() {
+                if (this.context.reactive) {
+                    this.error(chalk.red("The entity generator doesn't support reactive apps at the moment"));
+                }
             },
 
             validateDbExistence() {
@@ -278,6 +295,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
                     context.dto = 'no';
                     context.service = 'no';
                     context.jpaMetamodelFiltering = false;
+                    context.readOnly = false;
                 } else {
                     // existing entity reading values from file
                     this.log(`\nThe entity ${entityName} is being updated.\n`);
@@ -291,9 +309,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 const entityTableName = context.entityTableName;
                 const jhiTablePrefix = context.jhiTablePrefix;
                 const skipCheckLengthOfIdentifier = context.skipCheckLengthOfIdentifier;
-                const instructions = `You can specify a different table name in your JDL file or change it in .jhipster/${
-                    context.name
-                }.json file and then run again 'jhipster entity ${context.name}.'`;
+                const instructions = `You can specify a different table name in your JDL file or change it in .jhipster/${context.name}.json file and then run again 'jhipster entity ${context.name}.'`;
 
                 if (!/^([a-zA-Z0-9_]*)$/.test(entityTableName)) {
                     this.error(`The table name cannot contain special characters.\n${instructions}`);
@@ -345,6 +361,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
             askForService: prompts.askForService,
             askForDTO: prompts.askForDTO,
             askForFiltering: prompts.askForFiltering,
+            askForReadOnly: prompts.askForReadOnly,
             askForPagination: prompts.askForPagination
         };
     }
@@ -582,7 +599,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 });
 
                 // Validate root entity json content
-                if (_.isUndefined(context.changelogDate) && (context.databaseType === 'sql' || context.databaseType === 'cassandra')) {
+                if (_.isUndefined(context.changelogDate) && ['sql', 'cassandra'].includes(context.databaseType)) {
                     const currentDate = this.dateFormatForLiquibase();
                     this.warning(`changelogDate is missing in .jhipster/${entityName}.json, using ${currentDate} as fallback`);
                     context.changelogDate = currentDate;
@@ -617,37 +634,52 @@ class EntityGenerator extends BaseBlueprintGenerator {
                     return; // do not update if regenerating entity
                 }
                 // store information in a file for further use.
-                if (!context.useConfigurationFile && ['sql', 'cassandra'].includes(context.databaseType)) {
+                if (_.isUndefined(context.changelogDate) && ['sql', 'cassandra'].includes(context.databaseType)) {
                     context.changelogDate = this.dateFormatForLiquibase();
                 }
-                this.data = {};
-                this.data.fluentMethods = context.fluentMethods;
-                this.data.clientRootFolder = context.clientRootFolder;
-                this.data.relationships = context.relationships;
-                this.data.fields = context.fields;
-                this.data.changelogDate = context.changelogDate;
-                this.data.dto = context.dto;
-                this.data.searchEngine = context.searchEngine;
-                this.data.service = context.service;
-                this.data.entityTableName = context.entityTableName;
-                this.data.databaseType = context.databaseType;
-                this.copyFilteringFlag(context, this.data, context);
+
+                // Keep existing config by cloning fileData
+                const storageData = this.context.fileData ? { ...this.context.fileData } : {};
+                storageData.fluentMethods = context.fluentMethods;
+                storageData.clientRootFolder = context.clientRootFolder;
+                storageData.relationships = context.relationships;
+                storageData.fields = context.fields;
+                storageData.changelogDate = context.changelogDate;
+                storageData.dto = context.dto;
+                storageData.searchEngine = context.searchEngine;
+                storageData.service = context.service;
+                storageData.entityTableName = context.entityTableName;
+                storageData.databaseType = context.databaseType;
+                storageData.readOnly = context.readOnly;
+                this.copyFilteringFlag(context, storageData, context);
                 if (['sql', 'mongodb', 'couchbase'].includes(context.databaseType)) {
-                    this.data.pagination = context.pagination;
+                    storageData.pagination = context.pagination;
                 } else {
-                    this.data.pagination = 'no';
+                    storageData.pagination = 'no';
                 }
-                this.data.javadoc = context.javadoc;
+                storageData.javadoc = context.javadoc;
                 if (context.entityAngularJSSuffix) {
-                    this.data.angularJSSuffix = context.entityAngularJSSuffix;
+                    storageData.angularJSSuffix = context.entityAngularJSSuffix;
                 }
-                if (context.applicationType === 'microservice') {
-                    this.data.microserviceName = context.baseName;
+                if (context.applicationType === 'microservice' || context.applicationType === 'uaa') {
+                    storageData.microserviceName = context.baseName;
                 }
                 if (context.applicationType === 'gateway' && context.useMicroserviceJson) {
-                    this.data.microserviceName = context.microserviceName;
+                    storageData.microserviceName = context.microserviceName;
                 }
-                this.fs.writeJSON(context.filename, this.data, null, 4);
+
+                if (this.storageData) {
+                    // Override storageData configs with existing this.storageData
+                    // So that blueprints can create it and override fields.
+                    this.storageData = { ...storageData, ...this.storageData };
+                } else {
+                    this.storageData = storageData;
+                }
+
+                this.fs.writeJSON(context.filename, this.storageData, null, 4);
+
+                // Keep this.data for compatibility with existing blueprints
+                this.data = this.storageData;
             },
 
             loadInMemoryData() {
@@ -720,7 +752,7 @@ class EntityGenerator extends BaseBlueprintGenerator {
                         context.fieldsIsReactAvField = true;
                     }
 
-                    const nonEnumType = [
+                    field.fieldIsEnum = ![
                         'String',
                         'Integer',
                         'Long',
@@ -736,11 +768,6 @@ class EntityGenerator extends BaseBlueprintGenerator {
                         'byte[]',
                         'ByteBuffer'
                     ].includes(fieldType);
-                    if (['sql', 'mongodb', 'couchbase', 'no'].includes(context.databaseType) && !nonEnumType) {
-                        field.fieldIsEnum = true;
-                    } else {
-                        field.fieldIsEnum = false;
-                    }
 
                     if (field.fieldIsEnum === true) {
                         context.i18nToLoad.push(field.enumInstance);
@@ -848,6 +875,69 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 context.hasUserField = context.saveUserSnapshot = false;
                 // Load in-memory data for relationships
                 context.relationships.forEach(relationship => {
+                    const otherEntityName = relationship.otherEntityName;
+                    const otherEntityData = this.getEntityJson(otherEntityName);
+                    if (otherEntityData && otherEntityData.microserviceName && !otherEntityData.clientRootFolder) {
+                        otherEntityData.clientRootFolder = otherEntityData.microserviceName;
+                    }
+                    const jhiTablePrefix = context.jhiTablePrefix;
+
+                    // Look for fields at the other other side of the relationship
+                    if (otherEntityData && otherEntityData.relationships) {
+                        if (relationship.relationshipType === 'many-to-one' || relationship.relationshipType === 'many-to-many') {
+                            otherEntityData.relationships.forEach(otherRelationship => {
+                                if (_.upperFirst(otherRelationship.otherEntityName) !== entityName) {
+                                    return;
+                                }
+                                // otherEntityRelationshipName can be missing
+                                if (!otherRelationship.otherEntityRelationshipName) {
+                                    this.warning(
+                                        `Cannot compare relationship reference: otherEntityRelationshipName is missing in .jhipster/${otherEntityName}.json for relationship ${JSON.stringify(
+                                            otherRelationship,
+                                            null,
+                                            4
+                                        )}`
+                                    );
+                                    return;
+                                }
+                                if (otherRelationship.otherEntityRelationshipName !== relationship.relationshipName) {
+                                    return;
+                                }
+                                if (
+                                    (relationship.relationshipType === 'many-to-one' &&
+                                        otherRelationship.relationshipType === 'one-to-many') ||
+                                    (relationship.relationshipType === 'many-to-many' &&
+                                        otherRelationship.relationshipType === 'many-to-many')
+                                ) {
+                                    relationship.otherEntityRelationshipName =
+                                        relationship.otherEntityRelationshipName || otherRelationship.relationshipName;
+                                    relationship.otherEntityRelationshipNamePlural =
+                                        relationship.otherEntityRelationshipNamePlural || pluralize(otherRelationship.relationshipName);
+                                    relationship.otherEntityRelationshipNameCapitalized =
+                                        relationship.otherEntityRelationshipNameCapitalized ||
+                                        _.upperFirst(otherRelationship.relationshipName);
+                                    relationship.otherEntityRelationshipNameCapitalizedPlural = relationship.otherEntityRelationshipNameCapitalizedPlural = pluralize(
+                                        relationship.otherEntityRelationshipNameCapitalized
+                                    );
+                                }
+                            });
+                        }
+                    }
+
+                    if (_.isUndefined(relationship.otherEntityRelationshipNamePlural)) {
+                        relationship.otherEntityRelationshipNamePlural = pluralize(relationship.otherEntityRelationshipName);
+                    }
+
+                    if (_.isUndefined(relationship.otherEntityRelationshipNameCapitalized)) {
+                        relationship.otherEntityRelationshipNameCapitalized = _.upperFirst(relationship.otherEntityRelationshipName);
+                    }
+
+                    if (_.isUndefined(relationship.otherEntityRelationshipNameCapitalizedPlural)) {
+                        relationship.otherEntityRelationshipNameCapitalizedPlural = pluralize(
+                            _.upperFirst(relationship.otherEntityRelationshipName)
+                        );
+                    }
+
                     if (_.isUndefined(relationship.relationshipNameCapitalized)) {
                         relationship.relationshipNameCapitalized = _.upperFirst(relationship.relationshipName);
                     }
@@ -875,30 +965,6 @@ class EntityGenerator extends BaseBlueprintGenerator {
                     if (_.isUndefined(relationship.relationshipFieldNamePlural)) {
                         relationship.relationshipFieldNamePlural = pluralize(_.lowerFirst(relationship.relationshipName));
                     }
-
-                    if (
-                        _.isUndefined(relationship.otherEntityRelationshipNamePlural) &&
-                        _.isUndefined(relationship.otherEntityRelationshipName) === false
-                    ) {
-                        relationship.otherEntityRelationshipNamePlural = pluralize(relationship.otherEntityRelationshipName);
-                    }
-
-                    if (_.isUndefined(relationship.otherEntityRelationshipNameCapitalized)) {
-                        relationship.otherEntityRelationshipNameCapitalized = _.upperFirst(relationship.otherEntityRelationshipName);
-                    }
-
-                    if (_.isUndefined(relationship.otherEntityRelationshipNameCapitalizedPlural)) {
-                        relationship.otherEntityRelationshipNameCapitalizedPlural = pluralize(
-                            _.upperFirst(relationship.otherEntityRelationshipName)
-                        );
-                    }
-
-                    const otherEntityName = relationship.otherEntityName;
-                    const otherEntityData = this.getEntityJson(otherEntityName);
-                    if (otherEntityData && otherEntityData.microserviceName && !otherEntityData.clientRootFolder) {
-                        otherEntityData.clientRootFolder = otherEntityData.microserviceName;
-                    }
-                    const jhiTablePrefix = context.jhiTablePrefix;
 
                     if (context.dto && context.dto === 'mapstruct') {
                         if (
@@ -941,32 +1007,6 @@ class EntityGenerator extends BaseBlueprintGenerator {
                         relationship.otherEntityNameCapitalized = _.upperFirst(relationship.otherEntityName);
                     }
 
-                    if (_.isUndefined(relationship.otherEntityRelationshipNamePlural)) {
-                        if (relationship.relationshipType === 'many-to-one' || relationship.relationshipType === 'many-to-many') {
-                            if (otherEntityData && otherEntityData.relationships) {
-                                otherEntityData.relationships.forEach(otherRelationship => {
-                                    if (
-                                        _.upperFirst(otherRelationship.otherEntityName) === entityName &&
-                                        otherRelationship.otherEntityRelationshipName === relationship.relationshipName &&
-                                        ((relationship.relationshipType === 'many-to-one' &&
-                                            otherRelationship.relationshipType === 'one-to-many') ||
-                                            (relationship.relationshipType === 'many-to-many' &&
-                                                otherRelationship.relationshipType === 'many-to-many'))
-                                    ) {
-                                        relationship.otherEntityRelationshipName = otherRelationship.relationshipName;
-                                        relationship.otherEntityRelationshipNamePlural = pluralize(otherRelationship.relationshipName);
-                                        relationship.otherEntityRelationshipNameCapitalized = _.upperFirst(
-                                            otherRelationship.relationshipName
-                                        );
-                                        relationship.otherEntityRelationshipNameCapitalizedPlural = pluralize(
-                                            _.upperFirst(otherRelationship.relationshipName)
-                                        );
-                                    }
-                                });
-                            }
-                        }
-                    }
-
                     if (_.isUndefined(relationship.otherEntityAngularName)) {
                         if (relationship.otherEntityNameCapitalized !== 'User') {
                             const otherEntityAngularSuffix = otherEntityData ? otherEntityData.angularJSSuffix || '' : '';
@@ -993,6 +1033,9 @@ class EntityGenerator extends BaseBlueprintGenerator {
                             relationship.otherEntityModuleName = `${context.angularXAppName +
                                 relationship.otherEntityNameCapitalized}Module`;
                             relationship.otherEntityFileName = _.kebabCase(relationship.otherEntityAngularName);
+                            if (relationship.otherEntityFolderName === undefined) {
+                                relationship.otherEntityFolderName = _.kebabCase(relationship.otherEntityAngularName);
+                            }
                             if (
                                 context.skipUiGrouping ||
                                 otherEntityData === undefined ||
@@ -1005,27 +1048,28 @@ class EntityGenerator extends BaseBlueprintGenerator {
                             }
                             if (otherEntityData !== undefined && otherEntityData.clientRootFolder) {
                                 if (context.clientRootFolder === otherEntityData.clientRootFolder) {
-                                    relationship.otherEntityModulePath = relationship.otherEntityFileName;
+                                    relationship.otherEntityModulePath = relationship.otherEntityFolderName;
                                 } else {
                                     relationship.otherEntityModulePath = `${
                                         context.entityParentPathAddition ? `${context.entityParentPathAddition}/` : ''
-                                    }${otherEntityData.clientRootFolder}/${relationship.otherEntityFileName}`;
+                                    }${otherEntityData.clientRootFolder}/${relationship.otherEntityFolderName}`;
                                 }
-                                relationship.otherEntityModelName = `${otherEntityData.clientRootFolder}/${
-                                    relationship.otherEntityFileName
-                                }`;
-                                relationship.otherEntityPath = `${otherEntityData.clientRootFolder}/${relationship.otherEntityFileName}`;
+                                relationship.otherEntityModelName = `${otherEntityData.clientRootFolder}/${relationship.otherEntityFileName}`;
+                                relationship.otherEntityPath = `${otherEntityData.clientRootFolder}/${relationship.otherEntityFolderName}`;
                             } else {
                                 relationship.otherEntityModulePath = `${
                                     context.entityParentPathAddition ? `${context.entityParentPathAddition}/` : ''
-                                }${relationship.otherEntityFileName}`;
+                                }${relationship.otherEntityFolderName}`;
                                 relationship.otherEntityModelName = relationship.otherEntityFileName;
-                                relationship.otherEntityPath = relationship.otherEntityFileName;
+                                relationship.otherEntityPath = relationship.otherEntityFolderName;
                             }
                         } else {
                             relationship.otherEntityModuleName = `${context.angularXAppName}SharedModule`;
                             relationship.otherEntityModulePath = 'app/core';
                         }
+                    }
+                    if (otherEntityData) {
+                        this.copyFilteringFlag(otherEntityData, relationship, { ...otherEntityData, databaseType: context.databaseType });
                     }
                     // Load in-memory data for root
                     if (relationship.relationshipType === 'many-to-many' && relationship.ownerSide) {
@@ -1091,6 +1135,9 @@ class EntityGenerator extends BaseBlueprintGenerator {
                 if (this.isJhipsterVersionLessThan('5.0.0')) {
                     this.removeFile(`${constants.ANGULAR_DIR}entities/${entityName}/${entityName}.model.ts`);
                 }
+                if (this.isJhipsterVersionLessThan('6.3.0') && context.clientFramework === 'angularX') {
+                    this.removeFile(`${constants.ANGULAR_DIR}entities/${context.entityFolderName}/index.ts`);
+                }
             },
 
             composeServer() {
@@ -1151,7 +1198,10 @@ class EntityGenerator extends BaseBlueprintGenerator {
                         this.log(`\n${chalk.bold.green('Running post run module hooks\n')}`);
                         // form the data to be passed to modules
                         const context = this.context;
-                        context.data = context.data || context.fileData;
+
+                        // Keep context.data for unexpected compatibility issue.
+                        context.data = context.data || this.storageData || context.fileData;
+
                         // run through all post entity creation module hooks
                         this.callHooks(
                             'entity',

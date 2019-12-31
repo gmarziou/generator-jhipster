@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2019 the original author or authors from the JHipster project.
+ Copyright 2013-2020 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -28,7 +28,7 @@ import org.mapstruct.*;
  */
 @Mapper(componentModel = "spring", uses = {<% var existingMappings = [];
   for (idx in relationships) {
-    if ((relationships[idx].relationshipType === 'many-to-many' && relationships[idx].ownerSide === true)|| relationships[idx].relationshipType === 'many-to-one' ||(relationships[idx].relationshipType === 'one-to-one' && relationships[idx].ownerSide === true)){
+    if ((relationships[idx].relationshipType === 'many-to-many' && relationships[idx].ownerSide === true)|| relationships[idx].relationshipType === 'many-to-one' ||(relationships[idx].relationshipType === 'one-to-one' && relationships[idx].ownerSide === true)) {
       // if the entity is mapped twice, we should implement the mapping once
       if (!existingMappings.includes(relationships[idx].otherEntityNameCapitalized) && asEntity(relationships[idx].otherEntityNameCapitalized) !== asEntity(entityClass)) {
           existingMappings.push(relationships[idx].otherEntityNameCapitalized);
@@ -59,13 +59,16 @@ _%>
 // DTO -> entity mapping
 var renMapAnotDto = false;  //Render Mapping Annotation during DTO to Entity conversion?
 // var hasOAuthUser = false; // if OAuthUser, use a String id in fromId() method
+let primaryKeyType = pkType;
 for (idx in relationships) {
     const relationshipType = relationships[idx].relationshipType;
     const relationshipName = relationships[idx].relationshipName;
-    // hasOAuthUser = (relationshipName === 'user' && authenticationType === 'oauth2');
+    const otherEntityName = relationships[idx].otherEntityName;
     const relationshipNamePlural = relationships[idx].relationshipNamePlural;
     const relationshipNameCapitalized = relationships[idx].relationshipNameCapitalized;
     const ownerSide = relationships[idx].ownerSide;
+    const isUsingMapsId = relationships[idx].useJPADerivedIdentifier;
+    primaryKeyType = (isUsingMapsId === true && otherEntityName === 'user' && authenticationType === 'oauth2') ? 'String' : primaryKeyType;
     if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && ownerSide === true)) {
         renMapAnotDto = true;
 _%>
@@ -86,7 +89,7 @@ _%>
     <%_ } _%>
     <%_ if (databaseType === 'sql' || databaseType === 'mongodb' || databaseType === 'couchbase') { _%>
 
-    default <%= asEntity(entityClass) %> fromId(<%= pkType %> id) {
+    default <%= asEntity(entityClass) %> fromId(<%= primaryKeyType %> id) {
         if (id == null) {
             return null;
         }

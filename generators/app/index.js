@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,16 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable consistent-return */
 const chalk = require('chalk');
 const _ = require('lodash');
-const BaseGenerator = require('../generator-base');
+const BaseBlueprintGenerator = require('../generator-base-blueprint');
 const cleanup = require('../cleanup');
 const prompts = require('./prompts');
 const packagejs = require('../../package.json');
 const statistics = require('../statistics');
 const jhipsterUtils = require('../utils');
 
-module.exports = class extends BaseGenerator {
+let useBlueprints;
+
+module.exports = class extends BaseBlueprintGenerator {
     constructor(args, opts) {
         super(args, opts);
 
@@ -74,6 +77,13 @@ module.exports = class extends BaseGenerator {
         // This adds support for a `--skip-check-length-of-identifier` flag
         this.option('skip-check-length-of-identifier', {
             desc: 'Skip check the length of the identifier, only for recent Oracle databases that support 30+ characters metadata',
+            type: Boolean,
+            defaults: false
+        });
+
+        // This adds support for a `--skip-fake-data` flag
+        this.option('skip-fake-data', {
+            desc: 'Skip generation of fake data for development',
             type: Boolean,
             defaults: false
         });
@@ -176,12 +186,19 @@ module.exports = class extends BaseGenerator {
             defaults: false
         });
 
+        // This adds support for a `--creation-timestamp` flag which can be used create reproducible builds
+        this.option('creation-timestamp', {
+            desc: 'Project creation timestamp (used for reproducible builds)',
+            type: String
+        });
+
         this.skipClient = this.configOptions.skipClient = this.options['skip-client'] || this.config.get('skipClient');
         this.skipServer = this.configOptions.skipServer = this.options['skip-server'] || this.config.get('skipServer');
         this.skipUserManagement = this.configOptions.skipUserManagement =
             this.options['skip-user-management'] || this.config.get('skipUserManagement');
         this.skipCheckLengthOfIdentifier = this.configOptions.skipCheckLengthOfIdentifier =
             this.options['skip-check-length-of-identifier'] || this.config.get('skipCheckLengthOfIdentifier');
+        this.skipFakeData = this.configOptions.skipFakeData = this.options['skip-fake-data'];
         this.jhiPrefix = this.configOptions.jhiPrefix = _.camelCase(this.config.get('jhiPrefix') || this.options['jhi-prefix']);
         this.uaaBaseName = this.configOptions.uaaBaseName = this.options['uaa-base-name'] || this.config.get('uaaBaseName');
 
@@ -208,7 +225,7 @@ module.exports = class extends BaseGenerator {
         if (blueprints) {
             blueprints = jhipsterUtils.parseBluePrints(blueprints);
         } else {
-            blueprints = jhipsterUtils.loadBlueprintsFromConfiguration(this);
+            blueprints = jhipsterUtils.loadBlueprintsFromConfiguration(this.config);
         }
 
         this.blueprints = this.configOptions.blueprints = blueprints;
@@ -216,12 +233,15 @@ module.exports = class extends BaseGenerator {
         this.useNpm = this.configOptions.useNpm = !this.options.yarn;
         this.useYarn = !this.useNpm;
 
+        useBlueprints = !opts.fromBlueprint && this.instantiateBlueprints('app');
+
         this.isDebugEnabled = this.configOptions.isDebugEnabled = this.options.debug;
         this.experimental = this.configOptions.experimental = this.options.experimental;
         this.registerPrettierTransform();
+        this.setupAppOptions(this);
     }
 
-    get initializing() {
+    _initializing() {
         return {
             validateFromCli() {
                 this.checkInvocationFromCLI();
@@ -233,7 +253,10 @@ module.exports = class extends BaseGenerator {
 
             validateBlueprint() {
                 if (this.blueprints && !this.skipChecks) {
-                    this.blueprints.forEach(e => this.checkBlueprint(e.name));
+                    this.blueprints.forEach(blueprint => {
+                        this.checkJHipsterBlueprintVersion(blueprint.name);
+                        this.checkBlueprint(blueprint.name);
+                    });
                 }
             },
 
@@ -275,6 +298,8 @@ module.exports = class extends BaseGenerator {
                 if (this.jhipsterVersion === undefined) {
                     this.jhipsterVersion = this.config.get('jhipsterVersion');
                 }
+                // preserve old jhipsterVersion value for cleanup which occurs after new config is written into disk
+                this.jhipsterOldVersion = this.config.get('jhipsterVersion');
                 this.otherModules = this.config.get('otherModules') || [];
                 if (this.blueprints && this.blueprints.length > 0) {
                     this.blueprints.forEach(blueprint => {
@@ -305,11 +330,24 @@ module.exports = class extends BaseGenerator {
                         this.clientPackageManager = 'yarn';
                     }
                 }
+                // Set embeddableLaunchScript to true if not defined, for backward compatibility
+                // See https://github.com/jhipster/generator-jhipster/issues/10255
+                this.embeddableLaunchScript = this.config.get('embeddableLaunchScript');
+                if (!this.embeddableLaunchScript) {
+                    this.embeddableLaunchScript = true;
+                }
             }
         };
     }
 
-    get prompting() {
+    get initializing() {
+        if (useBlueprints) {
+            return;
+        }
+        return this._initializing();
+    }
+
+    _prompting() {
         return {
             askForInsightOptIn: prompts.askForInsightOptIn,
             askForApplicationType: prompts.askForApplicationType,
@@ -317,7 +355,12 @@ module.exports = class extends BaseGenerator {
         };
     }
 
-    get configuring() {
+    get prompting() {
+        if (useBlueprints) return;
+        return this._prompting();
+    }
+
+    _configuring() {
         return {
             setup() {
                 this.configOptions.skipI18nQuestion = true;
@@ -397,7 +440,12 @@ module.exports = class extends BaseGenerator {
         };
     }
 
-    get default() {
+    get configuring() {
+        if (useBlueprints) return;
+        return this._configuring();
+    }
+
+    _default() {
         return {
             askForTestOpts: prompts.askForTestOpts,
 
@@ -417,8 +465,11 @@ module.exports = class extends BaseGenerator {
             },
 
             saveConfig() {
+                const creationTimestamp = this.parseCreationTimestamp() || this.config.get('creationTimestamp') || new Date().getTime();
+
                 const config = {
                     jhipsterVersion: packagejs.version,
+                    creationTimestamp,
                     applicationType: this.applicationType,
                     baseName: this.baseName,
                     testFrameworks: this.testFrameworks,
@@ -440,6 +491,7 @@ module.exports = class extends BaseGenerator {
                 this.skipClient && (config.skipClient = true);
                 this.skipServer && (config.skipServer = true);
                 this.skipUserManagement && (config.skipUserManagement = true);
+                this.skipFakeData && (config.skipFakeData = true);
                 this.config.set(config);
             },
 
@@ -460,10 +512,16 @@ module.exports = class extends BaseGenerator {
         };
     }
 
-    get writing() {
+    get default() {
+        if (useBlueprints) return;
+        return this._default();
+    }
+
+    _writing() {
         return {
             cleanup() {
                 cleanup.cleanupOldFiles(this);
+                cleanup.upgradeFiles(this);
             },
 
             regenerateEntities() {
@@ -507,7 +565,12 @@ module.exports = class extends BaseGenerator {
         };
     }
 
-    get end() {
+    get writing() {
+        if (useBlueprints) return;
+        return this._writing();
+    }
+
+    _end() {
         return {
             gitCommit() {
                 if (!this.options['skip-git']) {
@@ -515,18 +578,53 @@ module.exports = class extends BaseGenerator {
                     const done = this.async();
                     this.isGitInstalled(code => {
                         if (code === 0 && this.gitInitialized) {
-                            this.gitExec('add -A', { trace: false }, () => {
-                                let commitMsg = `Initial application generated by JHipster-${this.jhipsterVersion}`;
-                                if (this.blueprints && this.blueprints.length > 0) {
-                                    const bpInfo = this.blueprints
-                                        .map(bp => `${bp.name.replace('generator-jhipster-', '')}-${bp.version}`)
-                                        .join(', ');
-                                    commitMsg += ` with blueprints: ${bpInfo}`;
+                            this.gitExec('log --oneline -n 1 -- .', { trace: false }, (code, commits) => {
+                                if (code !== 0 || !commits || !commits.trim()) {
+                                    // if no files in Git from current folder then we assume that this is initial application generation
+                                    this.gitExec('add .', { trace: false }, code => {
+                                        if (code === 0) {
+                                            let commitMsg = `Initial version of ${this.baseName} generated by JHipster-${this.jhipsterVersion}`;
+                                            if (this.blueprints && this.blueprints.length > 0) {
+                                                const bpInfo = this.blueprints
+                                                    .map(bp => `${bp.name.replace('generator-jhipster-', '')}-${bp.version}`)
+                                                    .join(', ');
+                                                commitMsg += ` with blueprints: ${bpInfo}`;
+                                            }
+                                            this.gitExec(`commit -m "${commitMsg}" -- .`, { trace: false }, code => {
+                                                if (code === 0) {
+                                                    this.log(
+                                                        chalk.green.bold(`Application successfully committed to Git from ${process.cwd()}.`)
+                                                    );
+                                                } else {
+                                                    this.log(
+                                                        chalk.red.bold(
+                                                            `Application commit to Git failed from ${process.cwd()}. Try to commit manually.`
+                                                        )
+                                                    );
+                                                }
+                                                done();
+                                            });
+                                        } else {
+                                            this.warning(
+                                                `The generated application could not be committed to Git, because ${chalk.bold(
+                                                    'git add'
+                                                )} command failed.`
+                                            );
+                                            done();
+                                        }
+                                    });
+                                } else {
+                                    // if found files in Git from current folder then we assume that this is application regeneration
+                                    // if there are changes in current folder then inform user about manual commit needed
+                                    this.gitExec('diff --name-only .', { trace: false }, (code, diffs) => {
+                                        if (code === 0 && diffs && diffs.trim()) {
+                                            this.log(
+                                                `Found commits in Git from ${process.cwd()}. So we assume this is application regeneration. Therefore automatic Git commit is not done. You can do Git commit manually.`
+                                            );
+                                        }
+                                        done();
+                                    });
                                 }
-                                this.gitExec(`commit -am "${commitMsg}"`, { trace: false }, () => {
-                                    this.log(chalk.green.bold('Application successfully committed to Git.'));
-                                    done();
-                                });
                             });
                         } else {
                             this.warning(
@@ -562,5 +660,10 @@ module.exports = class extends BaseGenerator {
                 );
             }
         };
+    }
+
+    get end() {
+        if (useBlueprints) return;
+        return this._end();
     }
 };

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -100,6 +100,7 @@ module.exports = class extends BaseBlueprintGenerator {
                 this.DOCKER_MSSQL = constants.DOCKER_MSSQL;
                 this.DOCKER_HAZELCAST_MANAGEMENT_CENTER = constants.DOCKER_HAZELCAST_MANAGEMENT_CENTER;
                 this.DOCKER_MEMCACHED = constants.DOCKER_MEMCACHED;
+                this.DOCKER_REDIS = constants.DOCKER_REDIS;
                 this.DOCKER_CASSANDRA = constants.DOCKER_CASSANDRA;
                 this.DOCKER_ELASTICSEARCH = constants.DOCKER_ELASTICSEARCH;
                 this.DOCKER_KEYCLOAK = constants.DOCKER_KEYCLOAK;
@@ -115,14 +116,19 @@ module.exports = class extends BaseBlueprintGenerator {
                 this.DOCKER_SWAGGER_EDITOR = constants.DOCKER_SWAGGER_EDITOR;
                 this.DOCKER_PROMETHEUS = constants.DOCKER_PROMETHEUS;
                 this.DOCKER_GRAFANA = constants.DOCKER_GRAFANA;
+                this.DOCKER_COMPOSE_FORMAT_VERSION = constants.DOCKER_COMPOSE_FORMAT_VERSION;
 
                 this.JAVA_VERSION = constants.JAVA_VERSION;
 
                 this.NODE_VERSION = constants.NODE_VERSION;
                 this.YARN_VERSION = constants.YARN_VERSION;
                 this.NPM_VERSION = constants.NPM_VERSION;
+                this.GRADLE_VERSION = constants.GRADLE_VERSION;
 
                 this.JIB_VERSION = constants.JIB_VERSION;
+                this.JACOCO_VERSION = constants.JACOCO_VERSION;
+
+                this.KAFKA_VERSION = constants.KAFKA_VERSION;
 
                 this.packagejs = packagejs;
                 const configuration = this.getAllJhipsterConfig(this, true);
@@ -131,7 +137,6 @@ module.exports = class extends BaseBlueprintGenerator {
                     this.applicationType = 'monolith';
                 }
                 this.reactive = configuration.get('reactive') || this.configOptions.reactive;
-                this.reactiveRepository = this.reactive ? 'reactive/' : '';
                 this.packageName = configuration.get('packageName');
                 this.serverPort = configuration.get('serverPort');
                 if (this.serverPort === undefined) {
@@ -188,12 +193,15 @@ module.exports = class extends BaseBlueprintGenerator {
                     this.devDatabaseType = configuration.get('devDatabaseType');
                     this.prodDatabaseType = configuration.get('prodDatabaseType');
                 }
+                this.skipFakeData = configuration.get('skipFakeData') || this.configOptions.skipFakeData;
 
                 this.buildTool = configuration.get('buildTool');
                 this.jhipsterVersion = packagejs.version;
                 if (this.jhipsterVersion === undefined) {
                     this.jhipsterVersion = configuration.get('jhipsterVersion');
                 }
+                // preserve old jhipsterVersion value for cleanup which occurs after new config is written into disk
+                this.jhipsterOldVersion = configuration.get('jhipsterVersion');
                 this.authenticationType = configuration.get('authenticationType');
                 if (this.authenticationType === 'session') {
                     this.rememberMeKey = configuration.get('rememberMeKey');
@@ -205,8 +213,15 @@ module.exports = class extends BaseBlueprintGenerator {
                 if (uaaBaseName) {
                     this.uaaBaseName = uaaBaseName;
                 }
+                const embeddableLaunchScript = configuration.get('embeddableLaunchScript');
+                if (embeddableLaunchScript) {
+                    this.embeddableLaunchScript = embeddableLaunchScript;
+                }
                 this.clientFramework = configuration.get('clientFramework');
                 this.clientTheme = configuration.get('clientTheme');
+                if (!this.clientTheme) {
+                    this.clientTheme = 'none';
+                }
                 const testFrameworks = configuration.get('testFrameworks');
                 if (testFrameworks) {
                     this.testFrameworks = testFrameworks;
@@ -363,7 +378,9 @@ module.exports = class extends BaseBlueprintGenerator {
                 this.lowercaseBaseName = this.baseName.toLowerCase();
                 this.humanizedBaseName = _.startCase(this.baseName);
                 this.mainClass = this.getMainClassName();
-                this.cacheManagerIsAvailable = ['ehcache', 'hazelcast', 'infinispan', 'memcached'].includes(this.cacheProvider);
+                this.cacheManagerIsAvailable = ['ehcache', 'caffeine', 'hazelcast', 'infinispan', 'memcached', 'redis'].includes(
+                    this.cacheProvider
+                );
                 this.pkType = this.getPkType(this.databaseType);
 
                 this.packageFolder = this.packageName.replace(/\./g, '/');
@@ -396,7 +413,8 @@ module.exports = class extends BaseBlueprintGenerator {
                     enableSwaggerCodegen: this.enableSwaggerCodegen,
                     jwtSecretKey: this.jwtSecretKey,
                     rememberMeKey: this.rememberMeKey,
-                    enableTranslation: this.enableTranslation
+                    enableTranslation: this.enableTranslation,
+                    embeddableLaunchScript: this.embeddableLaunchScript
                 };
                 if (this.enableTranslation && !this.configOptions.skipI18nQuestion) {
                     config.nativeLanguage = this.nativeLanguage;

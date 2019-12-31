@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -121,6 +121,7 @@ module.exports = class extends BaseBlueprintGenerator {
                     configuration.get('serviceDiscoveryType') === 'no' ? false : configuration.get('serviceDiscoveryType');
                 // Make dist dir available in templates
                 this.BUILD_DIR = this.getBuildDirectoryForBuildTool(configuration.get('buildTool'));
+                this.skipUserManagement = configuration.get('skipUserManagement');
             }
         };
     }
@@ -234,7 +235,7 @@ module.exports = class extends BaseBlueprintGenerator {
                         this.updateLanguagesInMomentWebpackReact(this.languages);
                     }
                 }
-                if (!this.skipServer) {
+                if (!this.skipUserManagement) {
                     this.updateLanguagesInLanguageMailServiceIT(this.languages, this.packageFolder);
                 }
             }

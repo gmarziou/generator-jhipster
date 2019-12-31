@@ -596,6 +596,7 @@ describe('JHipster generator', () => {
 
             it('creates expected files with authenticationType "oauth2"', () => {
                 assert.file(expectedFiles.oauth2);
+                assert.file(expectedFiles.oauth2Client);
                 assert.file(expectedFiles.mysql);
                 assert.file(expectedFiles.hibernateTimeZoneConfig);
             });
@@ -633,6 +634,7 @@ describe('JHipster generator', () => {
 
             it('creates expected files with authenticationType "oauth2" and elasticsearch', () => {
                 assert.file(expectedFiles.oauth2);
+                assert.file(expectedFiles.oauth2Client);
                 assert.file(expectedFiles.elasticsearch);
                 assert.file(expectedFiles.hibernateTimeZoneConfig);
                 assert.file(expectedFiles.mysql);
@@ -668,6 +670,7 @@ describe('JHipster generator', () => {
 
             it('creates expected files with authenticationType "oauth2" and mongodb', () => {
                 assert.file(expectedFiles.oauth2);
+                assert.file(expectedFiles.oauth2Client);
                 assert.file(expectedFiles.mongodb);
             });
         });
@@ -815,6 +818,43 @@ describe('JHipster generator', () => {
                 assert.file(expectedFiles.userManagementServer);
                 assert.file(expectedFiles.client);
                 assert.file(expectedFiles.memcached);
+                assert.file(expectedFiles.mysql);
+                assert.file(expectedFiles.hibernateTimeZoneConfig);
+            });
+        });
+
+        describe('Redis', () => {
+            before(done => {
+                helpers
+                    .run(path.join(__dirname, '../generators/app'))
+                    .withOptions({ 'from-cli': true, skipInstall: true, skipChecks: true })
+                    .withPrompts({
+                        baseName: 'jhipster',
+                        packageName: 'com.mycompany.myapp',
+                        packageFolder: 'com/mycompany/myapp',
+                        clientFramework: 'angularX',
+                        serviceDiscoveryType: false,
+                        authenticationType: 'jwt',
+                        cacheProvider: 'redis',
+                        enableHibernateCache: true,
+                        databaseType: 'sql',
+                        devDatabaseType: 'h2Memory',
+                        prodDatabaseType: 'mysql',
+                        enableTranslation: true,
+                        nativeLanguage: 'en',
+                        languages: ['fr'],
+                        buildTool: 'maven',
+                        rememberMeKey: '5c37379956bd1242f5636c8cb322c2966ad81277',
+                        serverSideOptions: []
+                    })
+                    .on('end', done);
+            });
+            it('creates expected files with "Redis"', () => {
+                assert.file(expectedFiles.common);
+                assert.file(expectedFiles.server);
+                assert.file(expectedFiles.userManagementServer);
+                assert.file(expectedFiles.client);
+                assert.file(expectedFiles.redis);
                 assert.file(expectedFiles.mysql);
                 assert.file(expectedFiles.hibernateTimeZoneConfig);
             });

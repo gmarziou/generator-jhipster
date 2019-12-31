@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,39 +17,57 @@
  * limitations under the License.
  */
 
-// version of docker images
-const DOCKER_JHIPSTER_REGISTRY = 'jhipster/jhipster-registry:v5.0.2';
+// Version of Java
+const JAVA_VERSION = '1.8'; // Java version is forced to be 1.8. We keep the variable as it might be useful in the future.
+
+// Version of Node, Yarn, NPM
+const NODE_VERSION = '12.13.1';
+const YARN_VERSION = '1.21.1';
+const NPM_VERSION = '6.13.4';
+
+const GRADLE_VERSION = '6.0.1';
+
+// Libraries version
+const JIB_VERSION = '1.8.0';
+
+const JACOCO_VERSION = '0.8.5';
+
+const KAFKA_VERSION = '5.3.1';
+
+// Version of docker images
+const DOCKER_JHIPSTER_REGISTRY = 'jhipster/jhipster-registry:v6.0.2';
 const DOCKER_JAVA_JRE = 'adoptopenjdk:11-jre-hotspot';
-const DOCKER_MYSQL = 'mysql:8.0.16';
-const DOCKER_MARIADB = 'mariadb:10.4.6';
-const DOCKER_POSTGRESQL = 'postgres:11.4';
-const DOCKER_MONGODB = 'mongo:4.0.10';
-const DOCKER_COUCHBASE = 'couchbase:6.0.1';
-const DOCKER_CASSANDRA = 'cassandra:3.11.4';
-const DOCKER_MSSQL = 'microsoft/mssql-server-linux:latest';
-const DOCKER_HAZELCAST_MANAGEMENT_CENTER = 'hazelcast/management-center:3.12.1';
-const DOCKER_MEMCACHED = 'memcached:1.5.16-alpine';
-const DOCKER_KEYCLOAK = 'jboss/keycloak:6.0.1';
-const DOCKER_ELASTICSEARCH = 'docker.elastic.co/elasticsearch/elasticsearch:6.4.3'; // The version should be coerent with the one from spring-data-elasticsearch project
-const DOCKER_KAFKA = 'confluentinc/cp-kafka:5.2.2';
-const DOCKER_ZOOKEEPER = 'confluentinc/cp-zookeeper:5.2.2';
-const DOCKER_SONAR = 'sonarqube:7.9-community';
-const DOCKER_JHIPSTER_CONSOLE = 'jhipster/jhipster-console:v4.0.0';
-const DOCKER_JHIPSTER_CURATOR = 'jhipster/jhipster-curator:v4.0.0';
-const DOCKER_JHIPSTER_ELASTICSEARCH = 'jhipster/jhipster-elasticsearch:v4.0.0';
-const DOCKER_JHIPSTER_LOGSTASH = 'jhipster/jhipster-logstash:v4.0.0';
-const DOCKER_JHIPSTER_IMPORT_DASHBOARDS = 'jhipster/jhipster-import-dashboards:v4.0.0';
-const DOCKER_JHIPSTER_ZIPKIN = 'jhipster/jhipster-zipkin:v4.0.0';
-const DOCKER_TRAEFIK = 'traefik:1.7.12';
-const DOCKER_CONSUL = 'consul:1.5.2';
+const DOCKER_MYSQL = 'mysql:8.0.18';
+const DOCKER_MARIADB = 'mariadb:10.4.10';
+const DOCKER_POSTGRESQL = 'postgres:11.6';
+const DOCKER_MONGODB = 'mongo:4.0.13';
+const DOCKER_COUCHBASE = 'couchbase:6.0.3';
+const DOCKER_CASSANDRA = 'cassandra:3.11.5';
+const DOCKER_MSSQL = 'mcr.microsoft.com/mssql/server:2017-latest-ubuntu';
+const DOCKER_HAZELCAST_MANAGEMENT_CENTER = 'hazelcast/management-center:3.12.7';
+const DOCKER_MEMCACHED = 'memcached:1.5.20-alpine';
+const DOCKER_REDIS = 'redis:5.0.7';
+const DOCKER_KEYCLOAK = 'jboss/keycloak:8.0.1'; // The version should match the attribute 'keycloakVersion' from /docker-compose/templates/realm-config/jhipster-realm.json.ejs and /server/templates/src/main/docker/config/realm-config/jhipster-realm.json.ejs
+const DOCKER_ELASTICSEARCH = 'docker.elastic.co/elasticsearch/elasticsearch:6.8.5'; // The version should be coerent with the one from spring-data-elasticsearch project
+const DOCKER_KAFKA = `confluentinc/cp-kafka:${KAFKA_VERSION}`;
+const DOCKER_ZOOKEEPER = `confluentinc/cp-zookeeper:${KAFKA_VERSION}`;
+const DOCKER_SONAR = 'sonarqube:7.9.1-community';
+const DOCKER_JHIPSTER_CONSOLE = 'jhipster/jhipster-console:v4.1.0';
+const DOCKER_JHIPSTER_CURATOR = 'jhipster/jhipster-curator:v4.1.0';
+const DOCKER_JHIPSTER_ELASTICSEARCH = 'jhipster/jhipster-elasticsearch:v4.1.0';
+const DOCKER_JHIPSTER_LOGSTASH = 'jhipster/jhipster-logstash:v4.1.0';
+const DOCKER_JHIPSTER_IMPORT_DASHBOARDS = 'jhipster/jhipster-import-dashboards:v4.1.0';
+const DOCKER_JHIPSTER_ZIPKIN = 'jhipster/jhipster-zipkin:v4.1.0';
+const DOCKER_TRAEFIK = 'traefik:1.7.19';
+const DOCKER_CONSUL = 'consul:1.6.2';
 const DOCKER_CONSUL_CONFIG_LOADER = 'jhipster/consul-config-loader:v0.3.0';
-const DOCKER_PROMETHEUS = 'prom/prometheus:v2.10.0';
-const DOCKER_PROMETHEUS_ALERTMANAGER = 'prom/alertmanager:v0.17.0';
-const DOCKER_GRAFANA = 'grafana/grafana:6.2.5';
-const DOCKER_JENKINS = 'jenkins:latest';
+const DOCKER_PROMETHEUS = 'prom/prometheus:v2.14.0';
+const DOCKER_PROMETHEUS_ALERTMANAGER = 'prom/alertmanager:v0.19.0';
+const DOCKER_GRAFANA = 'grafana/grafana:6.5.1';
+const DOCKER_JENKINS = 'jenkins/jenkins:lts';
 const DOCKER_SWAGGER_EDITOR = 'swaggerapi/swagger-editor:latest';
 const DOCKER_COMPOSE_FORMAT_VERSION = '2';
-const DOCKER_PROMETHEUS_OPERATOR = 'quay.io/coreos/prometheus-operator:v0.31.1';
+const DOCKER_PROMETHEUS_OPERATOR = 'quay.io/coreos/prometheus-operator:v0.34.0';
 const DOCKER_GRAFANA_WATCHER = 'quay.io/coreos/grafana-watcher:v0.0.8';
 
 // Kubernetes versions
@@ -61,16 +79,15 @@ const KUBERNETES_INGRESS_API_VERSION = 'extensions/v1beta1';
 const KUBERNETES_ISTIO_NETWORKING_API_VERSION = 'networking.istio.io/v1alpha3';
 const KUBERNETES_RBAC_API_VERSION = 'rbac.authorization.k8s.io/v1';
 
-// Version of Java
-const JAVA_VERSION = '1.8'; // Java version is forced to be 1.8. We keep the variable as it might be useful in the future.
-
-// version of Node, Yarn, NPM
-const NODE_VERSION = '10.16.0';
-const YARN_VERSION = '1.17.3';
-const NPM_VERSION = '6.9.2';
-
-// Libraries version
-const JIB_VERSION = '1.4.0';
+// Helm versions
+const HELM_KAFKA = '^0.20.1';
+const HELM_ELASTICSEARCH = '^1.32.0';
+const HELM_PROMETHEUS = '^9.2.0';
+const HELM_GRAFANA = '^4.0.0';
+const HELM_MYSQL = '^1.4.0';
+const HELM_MARIADB = '^6.12.2';
+const HELM_POSTGRESQL = '^6.5.3';
+const HELM_MOGODB_REPLICASET = '^3.10.1';
 
 // all constants used throughout all generators
 
@@ -130,7 +147,7 @@ const LANGUAGES = [
         momentLocaleId: 'hy-am'
     },
     {
-        name: 'Belorussian',
+        name: 'Belarusian',
         dispName: 'Беларускі',
         value: 'by',
         momentLocaleId: 'be-by'
@@ -277,6 +294,7 @@ const constants = {
     DOCKER_MSSQL,
     DOCKER_HAZELCAST_MANAGEMENT_CENTER,
     DOCKER_MEMCACHED,
+    DOCKER_REDIS,
     DOCKER_ELASTICSEARCH,
     DOCKER_KEYCLOAK,
     DOCKER_KAFKA,
@@ -298,9 +316,12 @@ const constants = {
     NODE_VERSION,
     YARN_VERSION,
     NPM_VERSION,
+    KAFKA_VERSION,
+    GRADLE_VERSION,
 
     // Libraries
     JIB_VERSION,
+    JACOCO_VERSION,
 
     DOCKER_JENKINS,
     DOCKER_SWAGGER_EDITOR,
@@ -314,7 +335,16 @@ const constants = {
     KUBERNETES_STATEFULSET_API_VERSION,
     KUBERNETES_INGRESS_API_VERSION,
     KUBERNETES_ISTIO_NETWORKING_API_VERSION,
-    KUBERNETES_RBAC_API_VERSION
+    KUBERNETES_RBAC_API_VERSION,
+
+    HELM_KAFKA,
+    HELM_ELASTICSEARCH,
+    HELM_PROMETHEUS,
+    HELM_GRAFANA,
+    HELM_MYSQL,
+    HELM_MARIADB,
+    HELM_POSTGRESQL,
+    HELM_MOGODB_REPLICASET
 };
 
 module.exports = constants;

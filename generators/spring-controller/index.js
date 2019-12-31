@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -66,11 +66,13 @@ module.exports = class extends BaseBlueprintGenerator {
                 this.packageFolder = configuration.get('packageFolder');
                 this.databaseType = configuration.get('databaseType');
                 this.messageBroker = configuration.get('messageBroker') === 'no' ? false : configuration.get('messageBroker');
+                this.cacheProvider = configuration.get('cacheProvider') || configuration.get('hibernateCache') || 'no';
                 if (this.messageBroker === undefined) {
                     this.messageBroker = false;
                 }
                 this.reactiveController = false;
                 this.applicationType = configuration.get('applicationType');
+                this.authenticationType = configuration.get('authenticationType');
                 this.reactive = configuration.get('reactive');
                 this.reactiveController = this.reactive;
                 this.controllerActions = [];

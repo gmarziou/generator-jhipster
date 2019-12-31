@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2019 the original author or authors from the JHipster project.
+ Copyright 2013-2020 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -23,7 +23,7 @@ import <%=packageName%>.config.Constants;
 import <%=packageName%>.domain.<%= asEntity('User') %>;
 <%_ } _%>
 <%_ if (authenticationType !== 'oauth2') { _%>
-import <%=packageName%>.repository<% if (reactive) { %>.reactive<% } %>.UserRepository;
+import <%=packageName%>.repository.UserRepository;
 <%_ } _%>
 <%_ if (searchEngine === 'elasticsearch') { _%>
 import <%=packageName%>.repository.search.UserSearchRepository;

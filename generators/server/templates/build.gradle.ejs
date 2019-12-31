@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2019 the original author or authors from the JHipster project.
+ Copyright 2013-2020 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,42 +16,40 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
-import org.gradle.internal.os.OperatingSystem
-
 buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
         gradlePluginPortal()
-        maven { url "http://repo.spring.io/plugins-release" }
+        maven { url "https://repo.spring.io/plugins-release" }
     }
     dependencies {
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:${spring_boot_version}"
-        classpath "io.spring.gradle:propdeps-plugin:0.0.10.RELEASE"
         //jhipster-needle-gradle-buildscript-dependency - JHipster will add additional gradle build script plugins here
     }
 }
 
 plugins {
     id "java"
-    id "maven"
+    id "maven-publish"
     id "idea"
     id "jacoco"
-    id "com.google.cloud.tools.jib" version "<%= JIB_VERSION %>"
-    id "com.gorylenko.gradle-git-properties" version "2.0.0"
+    id "org.springframework.boot"
+    id "com.google.cloud.tools.jib"
+    id "com.gorylenko.gradle-git-properties"
     <%_ if (enableSwaggerCodegen) { _%>
-    id "org.openapi.generator" version "4.0.2"
+    id "org.openapi.generator"
     <%_ } _%>
     <%_ if (!skipClient) { _%>
-    id "com.github.node-gradle.node" version "1.5.1"
+    id "com.github.node-gradle.node"
     <%_ } _%>
-    id "net.ltgt.apt-eclipse" version "0.21"
-    id "net.ltgt.apt-idea" version "0.21"
-    id "net.ltgt.apt" version "0.21"
+    id "net.ltgt.apt-eclipse"
+    id "net.ltgt.apt-idea"
+    id "net.ltgt.apt"
     <%_ if (databaseType === 'sql') { _%>
-    id "org.liquibase.gradle" version "2.0.1"
+    id "org.liquibase.gradle"
     <%_ } _%>
-    id "org.sonarqube" version "2.7.1"
+    id "org.sonarqube"
+    id "io.spring.nohttp"
     //jhipster-needle-gradle-plugins - JHipster will add additional gradle plugins here
 }
 
@@ -62,10 +60,7 @@ description = ""
 
 sourceCompatibility=<%= JAVA_VERSION %>
 targetCompatibility=<%= JAVA_VERSION %>
-assert System.properties["java.specification.version"] == "1.8" || "11" || "12"
-
-apply plugin: "org.springframework.boot"
-apply plugin: "propdeps"
+assert System.properties["java.specification.version"] == "1.8" || "11" || "12" || "13"
 
 apply from: "gradle/docker.gradle"
 apply from: "gradle/sonar.gradle"
@@ -74,7 +69,7 @@ apply from: "gradle/swagger.gradle"
 <%_ } _%>
 //jhipster-needle-gradle-apply-from - JHipster will add additional gradle scripts to be applied here
 
-if (project.hasProperty("prod")) {
+if (project.hasProperty("prod") || project.hasProperty("gae")) {
     apply from: "gradle/profile_prod.gradle"
 } else {
     apply from: "gradle/profile_dev.gradle"
@@ -82,6 +77,19 @@ if (project.hasProperty("prod")) {
 
 if (project.hasProperty("war")) {
     apply from: "gradle/war.gradle"
+}
+
+if (project.hasProperty("gae")) {
+    apply plugin: 'maven'
+    apply plugin: 'org.springframework.boot.experimental.thin-launcher'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencyManagement {
+        imports {
+            mavenBom 'io.github.jhipster:jhipster-dependencies:${jhipster_dependencies_version}'
+        }
+    }
+    appengineStage.dependsOn thinResolve
 }
 
 <%_ if (serviceDiscoveryType || applicationType === 'gateway' || applicationType === 'microservice' || applicationType === 'uaa') { _%>
@@ -106,26 +114,6 @@ eclipse {
     }
 }
 
-// See https://virgo47.wordpress.com/2018/09/14/classpath-too-long-with-spring-boot-and-gradle/ for details
-// https://github.com/jhipster/generator-jhipster/issues/9713
-if (OperatingSystem.current().isWindows()) {
-    task classpathJar(type: Jar) {
-        inputs.files sourceSets.main.runtimeClasspath
-
-        archiveName = "runboot-classpath.jar"
-        doFirst {
-            manifest {
-                def classpath = sourceSets.test.runtimeClasspath.files
-                attributes "Class-Path": classpath.collect {f -> f.toURI().toString()}.join(" ")
-            }
-        }
-    }
-
-    bootRun {
-        classpath = classpathJar.outputs.files
-    }
-}
-
 defaultTasks "bootRun"
 
 springBoot {
@@ -134,7 +122,7 @@ springBoot {
 
 test {
     useJUnitPlatform()
-    exclude "**/*IT*", "**/*IntTest*"<%_ if (cucumberTests) { _%>, "**/*CucumberIT*"<%_ } _%>
+    exclude "**/*IT*", "**/*IntTest*"
 
     testLogging {
         events 'FAILED', 'SKIPPED'
@@ -207,7 +195,7 @@ liquibase {
     activities {
         main {
             driver "<% if (devDatabaseType === 'mysql') { %>com.mysql.cj.jdbc.Driver<% } else if (devDatabaseType === 'mariadb') { %>org.mariadb.jdbc.Driver<% } else if (devDatabaseType === 'postgresql') { %>org.postgresql.Driver<% } else if (devDatabaseType === 'h2Disk') { %>org.h2.Driver<% } else if (devDatabaseType === 'oracle') { %>oracle.jdbc.OracleDriver<% } %>"
-            url "<% if (devDatabaseType === 'mysql') { %>jdbc:mysql://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'mariadb') { %>jdbc:mariadb://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'postgresql') { %>jdbc:postgresql://localhost:5432/<%= baseName %><% } else if (devDatabaseType === 'h2Disk') { %>jdbc:h2:file:./target/h2db/db/<%= lowercaseBaseName %><% } else if (devDatabaseType === 'oracle') { %>jdbc:oracle:thin:@localhost:1521:<%= baseName %><% } else if (devDatabaseType === 'mssql') { %>jdbc:sqlserver://localhost:1433;database=<%= baseName %><% } %>"
+            url "<% if (devDatabaseType === 'mysql') { %>jdbc:mysql://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'mariadb') { %>jdbc:mariadb://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'postgresql') { %>jdbc:postgresql://localhost:5432/<%= baseName %><% } else if (devDatabaseType === 'h2Disk') { %>jdbc:h2:file:./build/h2db/db/<%= lowercaseBaseName %><% } else if (devDatabaseType === 'oracle') { %>jdbc:oracle:thin:@localhost:1521:<%= baseName %><% } else if (devDatabaseType === 'mssql') { %>jdbc:sqlserver://localhost:1433;database=<%= baseName %><% } %>"
             username "<% if (devDatabaseType === 'mysql') { %>root<% } else if (devDatabaseType === 'postgresql' || devDatabaseType === 'h2Disk' || devDatabaseType === 'h2Memory') { %><%= baseName %><% } else if (devDatabaseType === 'mssql') { %>SA<% } %>"
             password "<% if (devDatabaseType === 'mssql') { %>yourStrong(!)Password<% } %>"
             changeLogFile "<%= SERVER_MAIN_RES_DIR %>config/liquibase/master.xml"
@@ -217,11 +205,11 @@ liquibase {
         }
         diffLog {
             driver "<% if (devDatabaseType === 'mysql') { %>com.mysql.cj.jdbc.Driver<% } else if (devDatabaseType === 'mariadb') { %>org.mariadb.jdbc.Driver<% } else if (devDatabaseType === 'postgresql') { %>org.postgresql.Driver<% } else if (devDatabaseType === 'h2Disk') { %>org.h2.Driver<% } else if (devDatabaseType === 'oracle') { %>oracle.jdbc.OracleDriver<% } %>"
-            url "<% if (devDatabaseType === 'mysql') { %>jdbc:mysql://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'mariadb') { %>jdbc:mariadb://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'postgresql') { %>jdbc:postgresql://localhost:5432/<%= baseName %><% } else if (devDatabaseType === 'h2Disk') { %>jdbc:h2:file:./target/h2db/db/<%= lowercaseBaseName %><% } else if (devDatabaseType === 'oracle') { %>jdbc:oracle:thin:@localhost:1521:<%= baseName %><% } else if (devDatabaseType === 'mssql') { %>jdbc:sqlserver://localhost:1433;database=<%= baseName %><% } %>"
+            url "<% if (devDatabaseType === 'mysql') { %>jdbc:mysql://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'mariadb') { %>jdbc:mariadb://localhost:3306/<%= baseName %><% } else if (devDatabaseType === 'postgresql') { %>jdbc:postgresql://localhost:5432/<%= baseName %><% } else if (devDatabaseType === 'h2Disk') { %>jdbc:h2:file:./build/h2db/db/<%= lowercaseBaseName %><% } else if (devDatabaseType === 'oracle') { %>jdbc:oracle:thin:@localhost:1521:<%= baseName %><% } else if (devDatabaseType === 'mssql') { %>jdbc:sqlserver://localhost:1433;database=<%= baseName %><% } %>"
             username "<% if (devDatabaseType === 'mysql') { %>root<% } else if (devDatabaseType === 'postgresql' || devDatabaseType === 'h2Disk' || devDatabaseType === 'h2Memory') { %><%= baseName %><% } else if (devDatabaseType === 'mssql') { %>SA<% } %>"
             password "<% if (devDatabaseType === 'mssql') { %>yourStrong(!)Password<% } %>"
             changeLogFile project.ext.diffChangelogFile
-            referenceUrl "hibernate:spring:<%=packageName%>.domain?dialect=<% if (devDatabaseType === 'mysql') { %>org.hibernate.dialect.MySQL5InnoDBDialect<% } else if (devDatabaseType === 'mariadb') { %>org.hibernate.dialect.MySQL5InnoDBDialect<% } else if (devDatabaseType === 'postgresql') { %>org.hibernate.dialect.PostgreSQL95Dialect<% } else if (devDatabaseType === 'h2Disk') { %>org.hibernate.dialect.H2Dialect<% } else if (devDatabaseType === 'oracle') { %>org.hibernate.dialect.Oracle12cDialect<% } else if (devDatabaseType === 'mssql') { %>org.hibernate.dialect.SQLServerDialect<% } %>&hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy"
+            referenceUrl "hibernate:spring:<%=packageName%>.domain?dialect=<% if (devDatabaseType === 'mysql') { %>org.hibernate.dialect.MySQL8Dialect<% } else if (devDatabaseType === 'mariadb') { %>org.hibernate.dialect.MariaDB103Dialect<% } else if (devDatabaseType === 'postgresql') { %>io.github.jhipster.domain.util.FixedPostgreSQL10Dialect<% } else if (devDatabaseType === 'h2Disk') { %>org.hibernate.dialect.H2Dialect<% } else if (devDatabaseType === 'oracle') { %>org.hibernate.dialect.Oracle12cDialect<% } else if (devDatabaseType === 'mssql') { %>org.hibernate.dialect.SQLServer2012Dialect<% } %>&hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy"
             defaultSchemaName "<% if (devDatabaseType === 'mysql') { %><%= baseName %><% } else if (devDatabaseType === 'postgresql') { %><% } %>"
             logLevel "debug"
             classpath "$buildDir/classes/java/main"
@@ -233,36 +221,46 @@ liquibase {
 
     runList = project.ext.runList
 }
-
 <%_ } _%>
+
+gitProperties {
+    failOnNoGitDirectory = false
+    keys = ["git.branch", "git.commit.id.abbrev", "git.commit.id.describe"]
+}
+
+checkstyle {
+    toolVersion '${checkstyle_version}'
+    configFile file("checkstyle.xml")
+    checkstyleTest.enabled = false
+}
+nohttp {
+    source.include "build.gradle", "README.md"
+}
+
 configurations {
     providedRuntime
     implementation.exclude module: "spring-boot-starter-tomcat"
+    all {
+        resolutionStrategy {
+            // Inherited version from Spring Boot can't be used because of regressions:
+            // https://liquibase.jira.com/browse/CORE-3536 and https://liquibase.jira.com/browse/CORE-3522
+            force 'org.liquibase:liquibase-core:3.6.3'
+        }
+    }
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
-    <%_ if (devDatabaseType === 'oracle' || prodDatabaseType === 'oracle') { _%>
-    // more information at https://blogs.oracle.com/dev2dev/entry/how_to_get_oracle_jdbc
-    // https://discuss.gradle.org/t/support-for-maven-repositories-that-use-realm-based-sso/14456/5
-    maven {
-        url "https://www.oracle.com/content/secure/maven/content"
-        credentials {
-            username ''
-            password ''
-        }
-    }
-    <%_ } _%>
-    // TODO To remove after final JHipster release
-    maven { url "http://oss.sonatype.org/content/repositories/snapshots" }
     //jhipster-needle-gradle-repositories - JHipster will add additional repositories
 }
 
 dependencies {
     // import JHipster dependencies BOM
-    implementation platform("io.github.jhipster:jhipster-dependencies:${jhipster_dependencies_version}" )
+    if (!project.hasProperty("gae")) {
+        implementation platform("io.github.jhipster:jhipster-dependencies:${jhipster_dependencies_version}")
+    }
 
     // Use ", version: jhipster_dependencies_version, changing: true" if you want
     // to use a SNAPSHOT release instead of a stable release
@@ -309,7 +307,13 @@ dependencies {
     implementation "com.google.code.simple-spring-memcached:xmemcached-provider"
     implementation "com.googlecode.xmemcached:xmemcached"
     <%_ } _%>
-    <%_ if (['ehcache', 'hazelcast', 'infinispan'].includes(cacheProvider) || applicationType === 'gateway') { _%>
+    <%_ if (cacheProvider === 'redis') { _%>
+    implementation "org.redisson:redisson"
+        <%_ if (enableHibernateCache) { _%>
+    implementation "org.hibernate:hibernate-jcache"
+        <%_ } _%>
+    <%_ } _%>
+    <%_ if (['ehcache', 'caffeine', 'hazelcast', 'infinispan', 'redis'].includes(cacheProvider) || applicationType === 'gateway') { _%>
     implementation "javax.cache:cache-api"
     <%_ } _%>
     <%_ if (databaseType === 'sql') { _%>
@@ -320,7 +324,7 @@ dependencies {
     implementation "commons-codec:commons-codec"
     <%_ } _%>
     <%_ if (enableSwaggerCodegen) { _%>
-    implementation "org.openapitools:jackson-databind-nullable:0.1.0"
+    implementation "org.openapitools:jackson-databind-nullable:${jackson_databind_nullable_version}"
     <%_ } _%>
     implementation "org.apache.commons:commons-lang3"
     implementation "commons-io:commons-io"
@@ -334,9 +338,16 @@ dependencies {
     implementation "org.hibernate:hibernate-jcache"
         <%_ } _%>
     <%_ } _%>
+    <%_ if (cacheProvider === 'caffeine') { _%>
+    implementation "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
+    implementation "com.github.ben-manes.caffeine:jcache:${caffeine_version}"
+    implementation "com.typesafe:config:${typesafe_config_version}"
+        <%_ if (enableHibernateCache) { _%>
+    implementation "org.hibernate:hibernate-jcache"
+        <%_ } _%>
+    <%_ } _%>
     <%_ if (databaseType === 'sql') { _%>
     implementation "org.hibernate:hibernate-entitymanager"
-    implementation "org.hibernate:hibernate-envers"
     implementation "org.hibernate.validator:hibernate-validator"
     implementation "org.liquibase:liquibase-core"
     liquibaseRuntime "org.liquibase:liquibase-core"
@@ -358,17 +369,21 @@ dependencies {
         exclude module: "commons-logging"
     }
     // log4j2-mock needed to create embedded elasticsearch instance with SLF4J
-    runtimeOnly "de.dentrassi.elasticsearch:log4j2-mock:0.0.1"
+    runtimeOnly "de.dentrassi.elasticsearch:log4j2-mock:${log4j2_mock_version}"
     // end of Spring Data Jest dependencies
     <%_ } _%>
     <%_ if (['mongodb', 'cassandra', 'couchbase'].includes(databaseType)) { _%>
     implementation "org.springframework.boot:spring-boot-starter-data-<%=databaseType%><% if (reactive) { %>-reactive<% } %>"
     <%_ } _%>
     <%_ if (messageBroker === 'kafka') { _%>
-    implementation "org.springframework.kafka:spring-kafka"
+        <%_ if (!reactive) { _%>
+    implementation "org.apache.kafka:kafka-clients"
+        <%_ } else { _%>
+    implementation "io.projectreactor.kafka:reactor-kafka"
+        <%_ } _%>
     <%_ } _%>
     implementation "org.springframework.boot:spring-boot-starter-security"
-    implementation ("org.springframework.boot:spring-boot-starter-web<% if (reactive) { %>flux<% } %>") {
+    implementation ("org.springframework.boot:spring-boot-starter-web<% if (reactive) { %>flux<% } %>") {
         exclude module: "spring-boot-starter-tomcat"
     }
     <%_ if (!reactive) { _%>
@@ -422,11 +437,17 @@ dependencies {
     <%_ if (authenticationType === 'oauth2') { _%>
     implementation "org.springframework.boot:spring-boot-starter-oauth2-client"
     implementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
+    implementation "org.springframework.security.oauth:spring-security-oauth2"
     <%_ } _%>
     <%_ if (authenticationType === 'jwt') { _%>
     implementation "io.jsonwebtoken:jjwt-api"
-    runtimeOnly "io.jsonwebtoken:jjwt-impl"
-    runtimeOnly "io.jsonwebtoken:jjwt-jackson"
+    if (!project.hasProperty("gae")) {
+        runtimeOnly "io.jsonwebtoken:jjwt-impl"
+        runtimeOnly "io.jsonwebtoken:jjwt-jackson"
+    } else {
+        implementation "io.jsonwebtoken:jjwt-impl"
+        implementation "io.jsonwebtoken:jjwt-jackson"
+    }
     <%_ } _%>
     <%_ if (authenticationType === 'uaa') { _%>
     implementation "org.springframework.security.oauth:spring-security-oauth2"
@@ -486,25 +507,22 @@ dependencies {
     testImplementation "io.cucumber:cucumber-spring"
     <%_ } _%>
     testImplementation ("org.springframework.boot:spring-boot-starter-test") {
-        exclude module: "junit"
+        <%_ if (cucumberTests === false) { _%>
+        exclude group: "org.junit.vintage", module: "junit-vintage-engine"
+        <%_ } _%>
         exclude group: "com.vaadin.external.google", module: "android-json"
     }
     testImplementation "org.springframework.security:spring-security-test"
     testImplementation "org.springframework.boot:spring-boot-test"
-    testImplementation "org.junit.jupiter:junit-jupiter-engine"
-    <%_ if (cucumberTests) { _%>
-    testImplementation "org.junit.vintage:junit-vintage-engine"
-    <%_ } _%>
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "junit:junit"
-    testImplementation "org.mockito:mockito-core"
+    testImplementation "com.tngtech.archunit:archunit-junit5-api:${archunit_junit5_version}"
+    testRuntimeOnly "com.tngtech.archunit:archunit-junit5-engine:${archunit_junit5_version}"
     <%_ if (databaseType === 'mongodb') { _%>
     testImplementation "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
     <%_ } _%>
     <%_ if (databaseType === 'couchbase') { _%>
     testImplementation "org.testcontainers:couchbase"
     <%_ } _%>
-    testImplementation "org.hamcrest:hamcrest-library"
+    testImplementation "org.hamcrest:hamcrest"
     <%_ if (databaseType === 'sql') { _%>
     testImplementation "com.h2database:h2"
     <%_ } _%>
@@ -512,13 +530,26 @@ dependencies {
     liquibaseRuntime "com.h2database:h2"
     <%_ } _%>
     <%_ if (devDatabaseType === 'oracle' || prodDatabaseType === 'oracle') { _%>
-    implementation "com.oracle.jdbc:ojdbc8"
-    liquibaseRuntime "com.oracle.jdbc:ojdbc8"
+    implementation "com.oracle.ojdbc:ojdbc8"
+    liquibaseRuntime "com.oracle.ojdbc:ojdbc8"
     <%_ } _%>
     <%_ if (messageBroker === 'kafka') { _%>
-    testImplementation "org.springframework.kafka:spring-kafka-test"
+    testImplementation "org.testcontainers:database-commons"
+    testImplementation "org.testcontainers:kafka"
     <%_ } _%>
     //jhipster-needle-gradle-dependency - JHipster will add additional dependencies here
+}
+
+if (project.hasProperty("gae")) {
+    task createPom {
+        def basePath = 'build/resources/main/META-INF/maven'
+        doLast {
+            pom {
+                withXml(dependencyManagement.pomConfigurer)
+            }.writeTo("${basePath}/${project.group}/${project.name}/pom.xml")
+        }
+    }
+    bootJar.dependsOn = [createPom]
 }
 
 task cleanResources(type: Delete) {
@@ -526,8 +557,9 @@ task cleanResources(type: Delete) {
 }
 
 wrapper {
-    gradleVersion = "5.4.1"
+    gradleVersion = "<%= GRADLE_VERSION %>"
 }
+
 <%_ if (!skipClient) { _%>
 
 if (project.hasProperty("nodeInstall")) {
@@ -538,7 +570,12 @@ if (project.hasProperty("nodeInstall")) {
         download = true
     }
 }
+<%_ } _%>
+<%_ if (embeddableLaunchScript) { _%>
 
+bootJar {
+    launchScript()
+}
 <%_ } _%>
 compileJava.dependsOn processResources
 processResources.dependsOn bootBuildInfo

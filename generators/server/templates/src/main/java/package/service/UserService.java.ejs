@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2019 the original author or authors from the JHipster project.
+ Copyright 2013-2020 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -25,12 +25,12 @@ import <%=packageName%>.domain.Authority;
 <%_ if (databaseType !== 'no') { _%>
 import <%=packageName%>.domain.<%= asEntity('User') %>;
     <%_ if (databaseType === 'sql' || databaseType === 'mongodb' || databaseType === 'couchbase') { _%>
-import <%=packageName%>.repository<% if (reactive) { %>.reactive<% } %>.AuthorityRepository;
+import <%=packageName%>.repository.AuthorityRepository;
         <%_ if (authenticationType === 'session' && !reactive) { _%>
 import <%=packageName%>.repository.PersistentTokenRepository;
         <%_ } _%>
     <%_ } _%>
-import <%=packageName%>.repository<% if (reactive) { %>.reactive<% } %>.UserRepository;
+import <%=packageName%>.repository.UserRepository;
     <%_ if (searchEngine === 'elasticsearch') { _%>
 import <%=packageName%>.repository.search.UserSearchRepository;
     <%_ } _%>
@@ -41,8 +41,8 @@ import <%=packageName%>.security.SecurityUtils;
 <%_ } _%>
 import <%=packageName%>.service.dto.<%= asDto('User') %>;
 <%_ if (authenticationType !== 'oauth2') { _%>
-import <%=packageName%>.service.util.RandomUtil;
-import <%=packageName%>.web.rest.errors.*;
+
+import io.github.jhipster.security.RandomUtil;
 <%_ } _%>
 
 <%_ if (databaseType !== 'no') { _%>
@@ -226,7 +226,7 @@ public class UserService {
         userRepository.findOneByLogin(userDTO.getLogin().toLowerCase()).ifPresent(existingUser -> {
             boolean removed = removeNonActivatedUser(existingUser);
             if (!removed) {
-                throw new LoginAlreadyUsedException();
+                throw new UsernameAlreadyUsedException();
             }
         });
         userRepository.findOneByEmailIgnoreCase(userDTO.getEmail()).ifPresent(existingUser -> {
@@ -245,7 +245,9 @@ public class UserService {
         newUser.setPassword(encryptedPassword);
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
-        newUser.setEmail(userDTO.getEmail().toLowerCase());
+        if (userDTO.getEmail() != null) {
+            newUser.setEmail(userDTO.getEmail().toLowerCase());
+        }
         <%_ if (['sql', 'mongodb', 'couchbase'].includes(databaseType)) { _%>
         newUser.setImageUrl(userDTO.getImageUrl());
         <%_ } _%>
@@ -278,7 +280,7 @@ public class UserService {
                     <%_ } _%>
                     return userRepository.delete(existingUser);
                 } else {
-                    throw new LoginAlreadyUsedException();
+                    throw new UsernameAlreadyUsedException();
                 }
             })
             .then(userRepository.findOneByEmailIgnoreCase(userDTO.getEmail()))
@@ -303,7 +305,9 @@ public class UserService {
                 newUser.setPassword(encryptedPassword);
                 newUser.setFirstName(userDTO.getFirstName());
                 newUser.setLastName(userDTO.getLastName());
-                newUser.setEmail(userDTO.getEmail().toLowerCase());
+                if (userDTO.getEmail() != null) {
+                    newUser.setEmail(userDTO.getEmail().toLowerCase());
+                }
                 <%_ if (['sql', 'mongodb', 'couchbase'].includes(databaseType)) { _%>
                 newUser.setImageUrl(userDTO.getImageUrl());
                 <%_ } _%>
@@ -333,7 +337,7 @@ public class UserService {
     }
 
     <%_ if (!reactive) { _%>
-    private boolean removeNonActivatedUser(<%= asEntity('User') %> existingUser){
+    private boolean removeNonActivatedUser(<%= asEntity('User') %> existingUser) {
         if (existingUser.getActivated()) {
              return false;
         }
@@ -354,7 +358,9 @@ public class UserService {
         user.setLogin(userDTO.getLogin().toLowerCase());
         user.setFirstName(userDTO.getFirstName());
         user.setLastName(userDTO.getLastName());
-        user.setEmail(userDTO.getEmail().toLowerCase());
+        if (userDTO.getEmail() != null) {
+            user.setEmail(userDTO.getEmail().toLowerCase());
+        }
         <%_ if (databaseType === 'sql' || databaseType === 'mongodb' || databaseType === 'couchbase') { _%>
         user.setImageUrl(userDTO.getImageUrl());
         <%_ } _%>
@@ -425,7 +431,9 @@ public class UserService {
             .<% if (reactive) { %>flatMap<% } else { %>ifPresent<% } %>(user -> {
                 user.setFirstName(firstName);
                 user.setLastName(lastName);
-                user.setEmail(email.toLowerCase());
+                if (email != null) {
+	                user.setEmail(email.toLowerCase());
+                }
                 user.setLangKey(langKey);
                 <%_ if (['sql', 'mongodb', 'couchbase'].includes(databaseType)) { _%>
                 user.setImageUrl(imageUrl);
@@ -481,7 +489,9 @@ public class UserService {
                 user.setLogin(userDTO.getLogin().toLowerCase());
                 user.setFirstName(userDTO.getFirstName());
                 user.setLastName(userDTO.getLastName());
-                user.setEmail(userDTO.getEmail().toLowerCase());
+                if (userDTO.getEmail() != null) {
+                    user.setEmail(userDTO.getEmail().toLowerCase());
+                }
                 <%_ if (['sql', 'mongodb', 'couchbase'].includes(databaseType)) { _%>
                 user.setImageUrl(userDTO.getImageUrl());
                 <%_ } _%>
@@ -652,7 +662,7 @@ public class UserService {
     <%_ if (databaseType === 'sql') { _%>
     @Transactional(readOnly = true)
     <%_ } _%>
-    public <% if (reactive) { %>Mono<% } else { %>Optional<% } %><<%= asEntity('User') %>> getUserWithAuthorities(<%= pkType %> id) {
+    public <% if (reactive) { %>Mono<% } else { %>Optional<% } %><<%= asEntity('User') %>> getUserWithAuthorities(<% if (pkType === 'UUID') { %>String<% } else { %><%= pkType %><% } %> id) {
         <%_ if (databaseType === 'sql') { _%>
         return userRepository.findOneWithAuthoritiesById(id);
         <%_ } else { // MongoDB, Couchbase and and Cassandra _%>
@@ -797,7 +807,7 @@ public class UserService {
         <%= databaseType === 'no' ? asDto('User') : asEntity('User') %> user = getUser(attributes);
         user.setAuthorities(authToken.getAuthorities().stream()
             .map(GrantedAuthority::getAuthority)
-            <%_ if (databaseType !== 'no') { _%>
+            <%_ if (databaseType === 'sql' || databaseType === 'mongodb') { _%>
             .map(authority -> {
                 Authority auth = new Authority();
                 auth.setName(authority);
@@ -862,7 +872,9 @@ public class UserService {
 
     private void clearUserCaches(<%= asEntity('User') %> user) {
         Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_LOGIN_CACHE)).evict(user.getLogin());
-        Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE)).evict(user.getEmail());
+        if (user.getEmail() != null) {
+            Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE)).evict(user.getEmail());
+        }
     }
     <%_ } _%>
 }

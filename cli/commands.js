@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2019 the original author or authors from the JHipster project.
+ * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -55,13 +55,19 @@ function loadBlueprintCommands() {
 const defaultCommands = {
     app: {
         default: true,
-        desc: 'Create a new JHipster application based on the selected options'
+        desc: '[Default] Create a new JHipster application based on the selected options'
     },
     aws: {
         desc: 'Deploy the current application to Amazon Web Services'
     },
     'aws-containers': {
         desc: 'Deploy the current application to Amazon Web Services using ECS'
+    },
+    'azure-app-service': {
+        desc: 'Deploy the current application to Azure App Service'
+    },
+    'azure-spring-cloud': {
+        desc: 'Deploy the current application to Azure Spring Cloud'
     },
     'ci-cd': {
         desc: 'Create pipeline scripts for popular Continuous Integration/Continuous Deployment tools'
@@ -89,7 +95,7 @@ const defaultCommands = {
     'import-jdl': {
         argument: ['jdlFiles...'],
         cliOnly: true,
-        desc: `Create entities from the JDL file passed in argument.
+        desc: `Create entities from the JDL file/content passed in argument.
   By default everything is run in parallel. If you like to interact with the console use '--interactive' flag.`,
         help: `
     --skip-install        # Do not automatically install dependencies                              Default: false
@@ -99,14 +105,24 @@ const defaultCommands = {
     --ignore-application  # Ignores application generation                                         Default: false
     --ignore-deployments  # Ignores deployments generation                                         Default: false
     --skip-ui-grouping    # Disable the UI grouping behavior for entity client side code           Default: false
+    --skip-db-changelog   # Disable generation of database changelogs                              Default: false
+    --inline              # Pass JDL content inline. Argument can be skipped when passing this
 
 Arguments:
-    jdlFiles  # The JDL file names  Type: String[]  Required: true
+    jdlFiles # The JDL file names Type: String[] Required: true if --inline is not set
 
 Example:
     jhipster import-jdl myfile.jdl
     jhipster import-jdl myfile.jdl --interactive
     jhipster import-jdl myfile1.jdl myfile2.jdl
+    jhipster import-jdl --inline "application { config { baseName jhapp, testFrameworks [protractor] }}"
+    jhipster import-jdl --inline \\
+        "application {
+            config {
+                baseName jhapp,
+                testFrameworks [protractor]
+            }
+        }"
         `
     },
     info: {
@@ -134,6 +150,9 @@ Example:
     'spring-controller': {
         argument: ['name'],
         desc: 'Create a new Spring controller'
+    },
+    'openapi-client': {
+        desc: 'Generates java client code from an OpenAPI/Swagger definition'
     },
     upgrade: {
         desc: 'Upgrade the JHipster version, and upgrade the generated application'

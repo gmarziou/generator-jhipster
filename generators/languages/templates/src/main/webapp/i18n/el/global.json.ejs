@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2019 the original author or authors from the JHipster project.
+ Copyright 2013-2020 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -86,13 +86,13 @@
             "validate": {
                 "newpassword": {
                     "required": "Ο κωδικός σας είναι υποχρεωτικός.",
-                    "minlength": "Ο κωδικός σας πρέπει να περιέχει τουλάχιστον 5 χαρακτήρες.",
+                    "minlength": "Ο κωδικός σας πρέπει να περιέχει τουλάχιστον 4 χαρακτήρες.",
                     "maxlength": "Ο κωδικός σας δεν μπορεί να περιέχει πάνω από 50 χαρακτήρες.",
                     "strength": "Ισχύς Κωδικού:"
                 },
                 "confirmpassword": {
                     "required": "Η επιβεβαίωση του κωδικού σας είναι υποχρεωτική.",
-                    "minlength": "Η επιβεβαίωση του κωδικού σας πρέπει να περιέχει τουλάχιστον 5 χαρακτήρες.",
+                    "minlength": "Η επιβεβαίωση του κωδικού σας πρέπει να περιέχει τουλάχιστον 4 χαρακτήρες.",
                     "maxlength": "Η επιβεβαίωση του κωδικού σας δεν μπορεί να περιέχει πάνω από 50 χαρακτήρες."
                 },
                 "email": {
@@ -152,7 +152,11 @@
         "userexists": "Αυτό το όνομα σύνδεσης είναι ήδη εγγεγραμμένο!",
         "emailexists": "Αυτό το email είναι ήδη εγγεγραμμένο!",
         "idexists": "Ένα καινούργιο {{ entityName }} δεν μπορεί να έχει είδη ένα ID.",
-        "idnull": "Invalid ID"
+        "idnull": "Invalid ID",
+        "file": {
+            "could.not.extract": "Could not extract file",
+            "not.image": "File was expected to be an image but was found to be \"{{ fileType }}\""
+        }
     },
     "footer": "Αυτό είναι το υποσέλιδο σας"
 }
