@@ -271,7 +271,8 @@ function replaceTranslationKeysWithText(body, generator, regex) {
         const key = match[1];
         const target = key;
         const jsonData = geti18nJson(key, generator);
-        const keyValue = jsonData !== undefined ? deepFind(jsonData, key) : undefined;
+        // Escape quotes in translated text
+        const keyValue = jsonData !== undefined ? deepFind(jsonData, key).replace(/'/g, '\\\'') : undefined;
 
         body = body.replace(target, keyValue !== undefined ? keyValue : generator.baseName);
     }
@@ -345,7 +346,7 @@ function replaceTranslation(body, generator) {
  * @returns parsed json file
  */
 function geti18nJson(key, generator) {
-    const i18nDirectory = `${LANGUAGES_MAIN_SRC_DIR}i18n/en/`;
+    const i18nDirectory = `${LANGUAGES_MAIN_SRC_DIR}i18n/${generator.configOptions.nativeLanguage}/`;
     const names = [];
     let result;
     const namePrefix = _.kebabCase(key.split('.')[0]);
