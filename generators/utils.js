@@ -196,6 +196,7 @@ function copyWebResource(source, dest, regex, type, generator, opt = {}, templat
             switch (type) {
                 case 'html':
                     body = replacePlaceholders(body, generator);
+                    body = replaceHTMLElementBody(body, generator);
                     break;
                 case 'js':
                     body = replaceTitle(body, generator);
@@ -204,6 +205,8 @@ function copyWebResource(source, dest, regex, type, generator, opt = {}, templat
                     }
                     break;
                 case 'jsx':
+                    generator.log(`copyWebResource ${source}`);
+                    body = replaceErrorMessage(body, generator);
                     body = replaceTranslation(body, generator);
                     break;
                 default:
@@ -248,10 +251,10 @@ function replaceTitle(body, generator) {
  *
  * @param {string} body html body
  * @param {object} generator reference to the generator
- * @returns string with pageTitle replaced
+ * @returns string with errorMessage replaced
  */
 function replaceErrorMessage(body, generator) {
-    const regex = /errorMessage[\s]*:[\s]*['|"]([a-zA-Z0-9.\-_]+)['|"]/g;
+    const regex = /errorMessage[\s]*[:=][\s]*['|"]([a-zA-Z0-9.\-_]+)['|"]/g;
     return replaceTranslationKeysWithText(body, generator, regex);
 }
 
@@ -297,6 +300,35 @@ function replacePlaceholders(body, generator) {
         const target = match[1];
         const jsonData = geti18nJson(key, generator);
         const keyValue = jsonData !== undefined ? deepFind(jsonData, key, true) : undefined; // dirty fix to get placeholder as it is not in proper json format, name has a dot in it. Assuming that all placeholders are in similar format
+
+        body = body.replace(target, keyValue !== undefined ? keyValue : '');
+    }
+
+    return body;
+}
+
+/**
+ *
+ * @param {string} body html body
+ * @param {object} generator reference to the generator
+ * @returns string with placeholders replaced
+ */
+function replaceHTMLElementBody(body, generator) {
+    const re = /([{]{2}['|"]([a-zA-Z0-9.\-_]+)['|"][\s][|][\s](translate)[}]{2})/g;
+    let match;
+
+    // eslint-disable-next-line no-cond-assign
+    while ((match = re.exec(body)) !== null) {
+        // match is now the next match, in array form and our key is at index 2, index 1 is replace target.
+        const key = match[2];
+        const target = match[1];
+
+        generator.log(`--------   ${key} ${target}`);
+
+        const jsonData = geti18nJson(key, generator);
+        const keyValue = jsonData !== undefined ? deepFind(jsonData, key, false) : undefined; // dirty fix to get placeholder as it is not in proper json format, name has a dot in it. Assuming that all placeholders are in similar format
+
+        generator.log(`          ${keyValue}`);
 
         body = body.replace(target, keyValue !== undefined ? keyValue : '');
     }
