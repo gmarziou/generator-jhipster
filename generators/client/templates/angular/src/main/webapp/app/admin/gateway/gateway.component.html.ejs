@@ -18,19 +18,19 @@
 -%>
 <div>
     <h2>
-        <span id="gateway-page-heading" jhiTranslate="gateway.title">Gateway</span>
+        <span id="gateway-page-heading" jhiTranslate="gateway.title"><%- t('gateway.title') %></span>
         <button class="btn btn-primary float-right" (click)="refresh()" (disabled)="updatingRoutes">
-            <fa-icon [icon]="'sync'"></fa-icon> <span jhiTranslate="gateway.refresh.button">Refresh</span>
+            <fa-icon [icon]="'sync'"></fa-icon> <span jhiTranslate="gateway.refresh.button"><%- t('gateway.refresh.button') %></span>
         </button>
     </h2>
-    <h3 jhiTranslate="gateway.routes.title">Current routes</h3>
+    <h3 jhiTranslate="gateway.routes.title"><%- t('gateway.routes.title') %></h3>
     <div class="table-responsive">
         <table class="table table-striped" aria-describedby="gateway-page-heading">
             <thead>
             <tr>
-                <th scope="col" jhiTranslate="gateway.routes.url">URL</th>
-                <th scope="col" jhiTranslate="gateway.routes.service">Service</th>
-                <th scope="col" jhiTranslate="gateway.routes.servers">Available servers</th>
+                <th scope="col" jhiTranslate="gateway.routes.url"><%- t('gateway.routes.url') %></th>
+                <th scope="col" jhiTranslate="gateway.routes.service"><%- t('gateway.routes.service') %></th>
+                <th scope="col" jhiTranslate="gateway.routes.servers"><%- t('gateway.routes.servers') %></th>
             </tr>
             </thead>
             <tbody>
@@ -39,7 +39,7 @@
                     <td>{{route.serviceId}}</td>
                     <td>
                         <div *ngIf="route.serviceInstances.length === 0" class="label label-danger" jhiTranslate="gateway.routes.error">
-                            Warning: no server available!
+                            <%- t('gateway.routes.error') %>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped" *ngIf="route">

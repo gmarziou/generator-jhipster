@@ -40,7 +40,7 @@
                     </div>
                     <%_ } else if (['byte[]', 'ByteBuffer'].includes(fieldType) && fieldTypeBlobContent === 'any') { _%>
                     <div *ngIf="<%= entityInstance %>.<%= fieldName %>">
-                        <a (click)="openFile(<%= entityInstance %>.<%= fieldName %>ContentType!, <%= entityInstance %>.<%= fieldName %>)" jhiTranslate="entity.action.open">open</a>
+                        <a (click)="openFile(<%= entityInstance %>.<%= fieldName %>ContentType!, <%= entityInstance %>.<%= fieldName %>)" jhiTranslate="entity.action.open"><%- t('entity.action.open') %></a>
                         {{<%= entityInstance %>.<%= fieldName %>ContentType}}, {{byteSize(<%= entityInstance %>.<%= fieldName %>)}}
                     </div>
                     <%_ } else { _%>
@@ -101,14 +101,14 @@
             <button type="submit"
                     (click)="previousState()"
                     class="btn btn-info">
-                <fa-icon [icon]="'arrow-left'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.back"> Back</span>
+                <fa-icon [icon]="'arrow-left'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.back"><%- t('entity.action.back') %></span>
             </button>
 
             <%_ if (!readOnly) { _%>
             <button type="button"
                     [routerLink]="['/<%= entityUrl %>', <%= entityInstance %>.id, 'edit']"
                     class="btn btn-primary">
-                <fa-icon [icon]="'pencil-alt'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.edit"> Edit</span>
+                <fa-icon [icon]="'pencil-alt'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.edit"><%- t('entity.action.edit') %></span>
             </button>
             <%_ } _%>
         </div>

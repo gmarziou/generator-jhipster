@@ -25,7 +25,7 @@
             <div *ngIf="user">
                 <<%= jhiPrefixDashed %>-alert-error></<%= jhiPrefixDashed %>-alert-error>
                 <div class="form-group" [hidden]="!user.id">
-                    <label jhiTranslate="global.field.id">ID</label>
+                    <label jhiTranslate="global.field.id"><%- t('global.field.id') %></label>
                     <input type="text" class="form-control" name="id" formControlName="id" readonly>
                 </div>
 
@@ -37,6 +37,7 @@
                     <div *ngIf="editForm.get('login')!.invalid && (editForm.get('login')!.dirty || editForm.get('login')!.touched)">
                         <small class="form-text text-danger"
                         *ngIf="editForm.get('login')?.errors?.required" jhiTranslate="entity.validation.required">
+<%- t('entity.validation.required') %>
                             This field is required.
                         </small>
 
@@ -85,6 +86,7 @@
                     <div *ngIf="editForm.get('email')!.invalid && (editForm.get('email')!.dirty || editForm.get('email')!.touched)">
                         <small class="form-text text-danger"
                         *ngIf="editForm.get('email')?.errors?.required" jhiTranslate="entity.validation.required">
+<%- t('entity.validation.required') %>
                             This field is required.
                         </small>
 
@@ -102,6 +104,7 @@
 
                         <small class="form-text text-danger"
                         *ngIf="editForm.get('email')?.errors?.email" jhiTranslate="global.messages.validate.email.invalid">
+<%- t('global.messages.validate.email.invalid') %>
                             Your email is invalid.
                         </small>
                     </div>
@@ -132,10 +135,10 @@
             <div *ngIf="user">
                 <button type="button" class="btn btn-secondary" (click)="previousState()">
                     <fa-icon [icon]="'ban'"></fa-icon>&nbsp;<span
-                    jhiTranslate="entity.action.cancel">Cancel</span>
+                    jhiTranslate="entity.action.cancel"><%- t('entity.action.cancel') %></span>
                 </button>
                 <button type="submit" [disabled]="editForm.invalid || isSaving" class="btn btn-primary">
-                    <fa-icon [icon]="'save'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save">Save</span>
+                    <fa-icon [icon]="'save'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save"><%- t('entity.action.save') %></span>
                 </button>
             </div>
         </form>

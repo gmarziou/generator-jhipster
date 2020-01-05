@@ -25,13 +25,13 @@
 </div>
 <div class="modal-body pad">
     <div *ngIf="health">
-        <h5 jhiTranslate="health.details.properties">Properties</h5>
+        <h5 jhiTranslate="health.details.properties"><%- t('health.details.properties') %></h5>
         <div class="table-responsive">
             <table class="table table-striped" aria-describedby="showHealthLabel">
                 <thead>
                     <tr>
-                        <th scope="col" class="text-left" jhiTranslate="health.details.name">Name</th>
-                        <th scope="col" class="text-left" jhiTranslate="health.details.value">Value</th>
+                        <th scope="col" class="text-left" jhiTranslate="health.details.name"><%- t('health.details.name') %></th>
+                        <th scope="col" class="text-left" jhiTranslate="health.details.value"><%- t('health.details.value') %></th>
                     </tr>
                 </thead>
                 <tbody>

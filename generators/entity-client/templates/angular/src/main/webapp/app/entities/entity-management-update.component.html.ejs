@@ -23,7 +23,7 @@
             <div>
                 <<%= jhiPrefixDashed %>-alert-error></<%= jhiPrefixDashed %>-alert-error>
                 <div class="form-group" [hidden]="!editForm.get('id')!.value">
-                    <label for="id" jhiTranslate="global.field.id">ID</label>
+                    <label for="id" jhiTranslate="global.field.id"><%- t('global.field.id') %></label>
                     <input type="text" class="form-control" id="id" name="id" formControlName="id"
                         readonly />
                 </div>
@@ -67,7 +67,7 @@ _%>
             <%_ } _%>
                         <div *ngIf="editForm.get('<%= fieldName %>')!.value" class="form-text text-danger clearfix">
             <%_ if (fieldTypeBlobContent === 'any') { _%>
-                            <a class="pull-left" (click)="openFile(editForm.get('<%= fieldName %>ContentType')!.value, editForm.get('<%= fieldName %>')!.value)" jhiTranslate="entity.action.open">open</a><br>
+                            <a class="pull-left" (click)="openFile(editForm.get('<%= fieldName %>ContentType')!.value, editForm.get('<%= fieldName %>')!.value)" jhiTranslate="entity.action.open"><%- t('entity.action.open') %></a><br>
                             <span class="pull-left">{{editForm.get('<%= fieldName %>ContentType')!.value}}, {{byteSize(editForm.get('<%= fieldName %>')!.value)}}</span>
             <%_ } else { _%>
                             <span class="pull-left">{{editForm.get('<%= fieldName %>ContentType')!.value}}, {{byteSize(editForm.get('<%= fieldName %>')!.value)}}</span>
@@ -112,7 +112,7 @@ _%>
         <%_ if (fields[idx].fieldValidateRules.includes('required')) { _%>
                         <small class="form-text text-danger"
                                *ngIf="editForm.get('<%= fieldName %>')?.errors?.required" jhiTranslate="entity.validation.required">
-                        This field is required.
+                        <%- t('entity.validation.required') %>
                         </small>
         <%_ } _%>
         <%_ if (fields[idx].fieldValidateRules.includes('minlength')) { _%>
@@ -160,6 +160,7 @@ _%>
         <%_ if (['Integer', 'Long', 'Float', 'Double', 'BigDecimal', 'Duration'].includes(fieldType)) { _%>
                         <small class="form-text text-danger"
                             [hidden]="!editForm.get('<%= fieldName %>')?.errors?.number" jhiTranslate="entity.validation.number">
+<%- t('entity.validation.number') %>
                             This field should be a number.
                         </small>
         <%_ } _%>
@@ -247,7 +248,7 @@ const translationKey = `${i18nKeyPrefix}.${relationshipName}`; _%>
         <%_ if (relationshipRequired) { _%>
                     <small class="form-text text-danger"
                            *ngIf="editForm.get('<% if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && ownerSide === true)) { %><%= relationshipName %><% if (dto !== 'no') { %>Id<% } %><%_ } else if (relationshipType === 'many-to-many' && relationships[idx].ownerSide === true) { _%><%= relationshipFieldNamePlural %><% } %>')?.errors?.required" jhiTranslate="entity.validation.required">
-                        This field is required.
+                        <%- t('entity.validation.required') %>
                     </small>
         <%_ } _%>
                 </div>
@@ -256,10 +257,10 @@ const translationKey = `${i18nKeyPrefix}.${relationshipName}`; _%>
             </div>
             <div>
                 <button type="button" id="cancel-save" class="btn btn-secondary"  (click)="previousState()">
-                    <fa-icon [icon]="'ban'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.cancel">Cancel</span>
+                    <fa-icon [icon]="'ban'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.cancel"><%- t('entity.action.cancel') %></span>
                 </button>
                 <button type="submit" id="save-entity" [disabled]="editForm.invalid || isSaving" class="btn btn-primary">
-                    <fa-icon [icon]="'save'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save">Save</span>
+                    <fa-icon [icon]="'save'"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save"><%- t('entity.action.save') %></span>
                 </button>
             </div>
         </form>
