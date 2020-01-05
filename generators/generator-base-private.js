@@ -104,6 +104,10 @@ module.exports = class extends Generator {
         generator.template(`${prefix}/${webappDir}i18n/${lang}/reset.json.ejs`, `${webappDir}i18n/${lang}/reset.json`);
     }
 
+    t(key) {
+        return jhipsterUtils.getTranslatedText(key, this);
+    }
+
     /**
      * Install I18N Server Files By Language
      *
