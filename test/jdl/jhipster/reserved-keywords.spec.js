@@ -91,4 +91,19 @@ describe('ReservedKeywords', () => {
             });
         });
     });
+    describe('findReservedJavaWordInPackageName', () => {
+        context('when passing a valid package name', () => {
+            it('should return undefined', () => {
+                expect(ReservedKeywords.findReservedJavaWordInPackageName('com.example.app')).to.be.undefined;
+                expect(ReservedKeywords.findReservedJavaWordInPackageName('com')).to.be.undefined;
+            });
+        });
+        context('when passing a package name that uses reserved keywords', () => {
+            it('should return the name of the first invalid sub package', () => {
+                expect(ReservedKeywords.findReservedJavaWordInPackageName('int')).to.equal('int');
+                expect(ReservedKeywords.findReservedJavaWordInPackageName('com.import')).to.equal('import');
+                expect(ReservedKeywords.findReservedJavaWordInPackageName('for.while')).to.equal('for');
+            });
+        });
+    });
 });

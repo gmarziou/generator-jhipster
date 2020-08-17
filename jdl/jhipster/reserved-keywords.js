@@ -83,11 +83,16 @@ function isReservedFieldName(keyword, clientFramework) {
     return isReserved(keyword, 'ANGULAR') || isReserved(keyword, 'TYPESCRIPT') || isReserved(keyword, 'JAVA');
 }
 
+function findReservedJavaWordInPackageName(pkgName) {
+    return pkgName.split('.').find(pkg => isReserved(pkg, 'JAVA'));
+}
+
 module.exports = {
     isReserved,
     isReservedClassName,
     isReservedTableName,
     isReservedFieldName,
+    findReservedJavaWordInPackageName,
     JHIPSTER: ReservedWords.JHIPSTER,
     ANGULAR: ReservedWords.ANGULAR,
     REACT: ReservedWords.REACT,

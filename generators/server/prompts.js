@@ -21,6 +21,7 @@ const chalk = require('chalk');
 
 const constants = require('../generator-constants');
 const { serverDefaultConfig } = require('../generator-defaults');
+const { findReservedJavaWordInPackageName } = require('../../jdl/jhipster/reserved-keywords');
 
 module.exports = {
     askForModuleName,
@@ -63,10 +64,16 @@ function askForServerSideOpts() {
         {
             type: 'input',
             name: 'packageName',
-            validate: input =>
-                /^([a-z_]{1}[a-z0-9_]*(\.[a-z_]{1}[a-z0-9_]*)*)$/.test(input)
-                    ? true
-                    : 'The package name you have provided is not a valid Java package name.',
+            validate: input => {
+                if (!/^([a-z_]{1}[a-z0-9_]*(\.[a-z_]{1}[a-z0-9_]*)*)$/.test(input)) {
+                    return 'The package name you have provided is not a valid Java package name.';
+                }
+                const reservedWord = findReservedJavaWordInPackageName(input);
+                if (reservedWord) {
+                    return `The package name you have provided contains a Java reserved keyword: ${reservedWord}`;
+                }
+                return true;
+            },
             message: 'What is your default Java package name?',
             default: serverDefaultConfig.packageName,
             store: true,
