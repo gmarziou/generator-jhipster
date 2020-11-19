@@ -36,10 +36,14 @@ const prettierPluginPackagejson = require('prettier-plugin-packagejson');
 const packagejs = require('../package.json');
 const jhipsterUtils = require('./utils');
 const constants = require('./generator-constants');
+const { defaultConfig } = require('./generator-defaults');
 const { languageToJavaLanguage } = require('./utils');
 const { prettierTransform, generatedAnnotationTransform } = require('./generator-transforms');
 const JSONToJDLEntityConverter = require('../jdl/converters/json-to-jdl-entity-converter');
 const JSONToJDLOptionConverter = require('../jdl/converters/json-to-jdl-option-converter');
+const { prepareEntityForTemplates, loadRequiredConfigIntoEntity } = require('../utils/entity');
+const { prepareFieldForTemplates } = require('../utils/field');
+const { formatDateForChangelog } = require('../utils/liquibase');
 
 const SERVER_TEST_SRC_DIR = constants.SERVER_TEST_SRC_DIR;
 const ANGULAR = constants.SUPPORTED_CLIENT_FRAMEWORKS.ANGULAR;
@@ -94,12 +98,14 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         if (generator.applicationType === 'gateway' && generator.serviceDiscoveryType) {
             generator.copyI18nFilesByName(generator, webappDir, 'gateway.json', lang);
         }
-        generator.copyI18nFilesByName(generator, webappDir, 'configuration.json', lang);
+        if (generator.withAdminUi) {
+            generator.copyI18nFilesByName(generator, webappDir, 'configuration.json', lang);
+            generator.copyI18nFilesByName(generator, webappDir, 'logs.json', lang);
+            generator.copyI18nFilesByName(generator, webappDir, 'metrics.json', lang);
+        }
         generator.copyI18nFilesByName(generator, webappDir, 'error.json', lang);
         generator.copyI18nFilesByName(generator, webappDir, 'login.json', lang);
         generator.copyI18nFilesByName(generator, webappDir, 'home.json', lang);
-        generator.copyI18nFilesByName(generator, webappDir, 'metrics.json', lang);
-        generator.copyI18nFilesByName(generator, webappDir, 'logs.json', lang);
         generator.copyI18nFilesByName(generator, webappDir, 'password.json', lang);
         generator.copyI18nFilesByName(generator, webappDir, 'register.json', lang);
         generator.copyI18nFilesByName(generator, webappDir, 'sessions.json', lang);
@@ -114,7 +120,9 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         // Templates
         generator.template(`${prefix}/${webappDir}i18n/${lang}/activate.json.ejs`, `${webappDir}i18n/${lang}/activate.json`);
         generator.template(`${prefix}/${webappDir}i18n/${lang}/global.json.ejs`, `${webappDir}i18n/${lang}/global.json`);
-        generator.template(`${prefix}/${webappDir}i18n/${lang}/health.json.ejs`, `${webappDir}i18n/${lang}/health.json`);
+        if (generator.withAdminUi) {
+            generator.template(`${prefix}/${webappDir}i18n/${lang}/health.json.ejs`, `${webappDir}i18n/${lang}/health.json`);
+        }
         generator.template(`${prefix}/${webappDir}i18n/${lang}/reset.json.ejs`, `${webappDir}i18n/${lang}/reset.json`);
     }
 
@@ -231,7 +239,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         if (this.clientFramework !== ANGULAR) {
             return;
         }
-        const fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/core/language/language.constants.ts`;
+        const fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/core/config/language.constants.ts`;
         try {
             let content = 'export const LANGUAGES: string[] = [\n';
             languages.forEach((language, i) => {
@@ -301,7 +309,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
     updateLanguagesInLanguagePipe(languages) {
         const fullPath =
             this.clientFramework === ANGULAR
-                ? `${this.CLIENT_MAIN_SRC_DIR}app/shared/language/find-language-from-key.pipe.ts`
+                ? `${this.CLIENT_MAIN_SRC_DIR}app/shared/find-language-from-key.pipe.ts`
                 : `${this.CLIENT_MAIN_SRC_DIR}/app/config/translation.ts`;
         try {
             let content = '{\n';
@@ -414,10 +422,12 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
      * @param languages
      */
     updateLanguagesInDayjsConfiguation(languages) {
-        const fullPath =
-            this.clientFramework === VUE
-                ? `${this.CLIENT_MAIN_SRC_DIR}app/shared/config/dayjs.ts`
-                : `${this.CLIENT_MAIN_SRC_DIR}app/config/dayjs.ts`;
+        let fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/config/dayjs.ts`;
+        if (this.clientFramework === VUE) {
+            fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/shared/config/dayjs.ts`;
+        } else if (this.clientFramework === ANGULAR) {
+            fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/core/config/dayjs.ts`;
+        }
         try {
             const content = languages.reduce(
                 (content, language) => `${content}import 'dayjs/locale/${this.getDayjsLocaleId(language)}'\n`,
@@ -686,35 +696,6 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
     }
 
     /**
-     * get hibernate SnakeCase in JHipster preferred style.
-     *
-     * @param {string} value - table column name or table name string
-     * @see org.springframework.boot.orm.jpa.hibernate.SpringNamingStrategy
-     * @returns hibernate SnakeCase in JHipster preferred style
-     */
-    hibernateSnakeCase(value) {
-        let res = '';
-        if (value) {
-            value = value.replace('.', '_');
-            res = value[0];
-            for (let i = 1, len = value.length - 1; i < len; i++) {
-                if (
-                    value[i - 1] !== value[i - 1].toUpperCase() &&
-                    value[i] !== value[i].toLowerCase() &&
-                    value[i + 1] !== value[i + 1].toUpperCase()
-                ) {
-                    res += `_${value[i]}`;
-                } else {
-                    res += value[i];
-                }
-            }
-            res += value[value.length - 1];
-            res = res.toLowerCase();
-        }
-        return res;
-    }
-
-    /**
      * Function to issue a https get request, and process the result
      *
      *  @param {string} url - the url to fetch
@@ -914,10 +895,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
                         variableName += 'Collection';
                     }
                     const relationshipFieldName = `${relationship.relationshipFieldName}`;
-                    const relationshipFieldNameIdCheck =
-                        dto === 'no'
-                            ? `!${entityInstance}.${relationshipFieldName} || !${entityInstance}.${relationshipFieldName}.id`
-                            : `!${entityInstance}.${relationshipFieldName}Id`;
+                    const relationshipFieldNameIdCheck = `!${entityInstance}.${relationshipFieldName} || !${entityInstance}.${relationshipFieldName}.id`;
 
                     filter = `filter: '${relationship.otherEntityRelationshipName.toLowerCase()}-is-null'`;
                     if (relationship.jpaMetamodelFiltering) {
@@ -933,13 +911,9 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
                                     this.${variableName} = resBody;
                                 } else {
                                     this.${relationship.otherEntityName}Service
-                                        .find(${entityInstance}.${relationshipFieldName}${dto !== 'no' ? 'Id' : '.id'})
-                                        .pipe(map((subRes: HttpResponse<I${
-                                            relationship.otherEntityAngularName
-                                        }>) => subRes.body ? [subRes.body].concat(resBody) : resBody))
-                                        .subscribe((concatRes: I${
-                                            relationship.otherEntityAngularName
-                                        }[]) => this.${variableName} = concatRes);
+                                        .find(${entityInstance}.${relationshipFieldName}.id)
+                                        .pipe(map((subRes: HttpResponse<I${relationship.otherEntityAngularName}>) => subRes.body ? [subRes.body].concat(resBody) : resBody))
+                                        .subscribe((concatRes: I${relationship.otherEntityAngularName}[]) => this.${variableName} = concatRes);
                                 }
                             });`;
                 } else {
@@ -1014,7 +988,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
     generateEntityClientFields(pkType, fields, relationships, dto, customDateType = 'dayjs.Dayjs', embedded = false) {
         const variablesWithTypes = [];
         const tsKeyType = this.getTypescriptKeyType(pkType);
-        if (!embedded) {
+        if (!embedded && this.jhipsterConfig.clientFramework !== ANGULAR) {
             variablesWithTypes.push(`id?: ${tsKeyType}`);
         }
         fields.forEach(field => {
@@ -1042,31 +1016,12 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
             let fieldType;
             let fieldName;
             const relationshipType = relationship.relationshipType;
-            const otherEntityIsEmbedded = relationship.otherEntityIsEmbedded;
             if (relationshipType === 'one-to-many' || relationshipType === 'many-to-many') {
                 fieldType = `I${relationship.otherEntityAngularName}[]`;
                 fieldName = relationship.relationshipFieldNamePlural;
-            } else if (dto === 'no' || otherEntityIsEmbedded) {
+            } else {
                 fieldType = `I${relationship.otherEntityAngularName}`;
                 fieldName = relationship.relationshipFieldName;
-            } else {
-                const relationshipFieldName = relationship.relationshipFieldName;
-                const relationshipType = relationship.relationshipType;
-                const otherEntityFieldCapitalized = relationship.otherEntityFieldCapitalized;
-                const ownerSide = relationship.ownerSide;
-
-                if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && ownerSide === true)) {
-                    if (otherEntityFieldCapitalized !== 'Id' && otherEntityFieldCapitalized !== '') {
-                        fieldType = 'string';
-                        fieldName = `${relationshipFieldName}${otherEntityFieldCapitalized}`;
-                        variablesWithTypes.push(`${fieldName}?: ${fieldType}`);
-                    }
-                    fieldType = tsKeyType; // review: added for mongodb-with-relations
-                    fieldName = `${relationshipFieldName}Id`;
-                } else {
-                    fieldType = tsKeyType;
-                    fieldName = `${relationship.relationshipFieldName}Id`;
-                }
             }
             variablesWithTypes.push(`${fieldName}?: ${fieldType}`);
         });
@@ -1084,31 +1039,15 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
     generateEntityClientImports(relationships, dto, clientFramework = this.clientFramework) {
         const typeImports = new Map();
         relationships.forEach(relationship => {
-            const relationshipType = relationship.relationshipType;
-            const otherEntityIsEmbedded = relationship.otherEntityIsEmbedded;
-            let toBeImported = false;
-            if (relationshipType === 'one-to-many' || relationshipType === 'many-to-many' || otherEntityIsEmbedded) {
-                toBeImported = true;
-            } else if (dto === 'no') {
-                toBeImported = true;
+            const otherEntityAngularName = relationship.otherEntityAngularName;
+            const importType = `I${otherEntityAngularName}`;
+            let importPath;
+            if (this.isBuiltInUser(otherEntityAngularName)) {
+                importPath = clientFramework === ANGULAR ? 'app/core/user/user.model' : 'app/shared/model/user.model';
             } else {
-                const ownerSide = relationship.ownerSide;
-
-                if (relationshipType === 'many-to-many' && ownerSide === true) {
-                    toBeImported = true;
-                }
+                importPath = `app/shared/model/${relationship.otherEntityClientRootFolder}${relationship.otherEntityFileName}.model`;
             }
-            if (toBeImported) {
-                const otherEntityAngularName = relationship.otherEntityAngularName;
-                const importType = `I${otherEntityAngularName}`;
-                let importPath;
-                if (this.isBuiltInUser(otherEntityAngularName)) {
-                    importPath = clientFramework === ANGULAR ? 'app/core/user/user.model' : 'app/shared/model/user.model';
-                } else {
-                    importPath = `app/shared/model/${relationship.otherEntityClientRootFolder}${relationship.otherEntityFileName}.model`;
-                }
-                typeImports.set(importType, importPath);
-            }
+            typeImports.set(importType, importPath);
         });
         return typeImports;
     }
@@ -1295,40 +1234,6 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
                 break;
         }
         return pk;
-    }
-
-    /**
-     * Returns the primary key data type based on authentication type, DB and given association
-     *
-     * @param {string} authenticationType - the auth type
-     * @param {string} databaseType - the database type
-     * @param {T[]} relationships - relationships
-     */
-    getPkTypeBasedOnDBAndAssociation(authenticationType, databaseType, relationships) {
-        const derivedRelationship = relationships.find(relationship => relationship.useJPADerivedIdentifier === true);
-        return derivedRelationship && this.isUserEntity(derivedRelationship.otherEntityName) && authenticationType === 'oauth2'
-            ? 'String'
-            : this.getPkType(databaseType);
-    }
-
-    /**
-     * Returns the JDBC URL for a databaseType
-     *
-     * @param {string} databaseType
-     * @param {*} options
-     */
-    getJDBCUrl(databaseType, options = {}) {
-        return this.getDBCUrl(databaseType, 'jdbc', options);
-    }
-
-    /**
-     * Returns the R2DBC URL for a databaseType
-     *
-     * @param {string} databaseType
-     * @param {*} options
-     */
-    getR2DBCUrl(databaseType, options = {}) {
-        return this.getDBCUrl(databaseType, 'r2dbc', options);
     }
 
     /**
@@ -1741,5 +1646,125 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         }
         config += '\n';
         return config;
+    }
+
+    createUserManagementEntities() {
+        this.configOptions.sharedEntities = this.configOptions.sharedEntities || {};
+        if (
+            this.configOptions.sharedEntities.User ||
+            (this.jhipsterConfig.skipUserManagement && this.jhipsterConfig.authenticationType !== 'oauth2')
+        ) {
+            return;
+        }
+
+        const changelogDateDate = this.jhipsterConfig.creationTimestamp ? new Date(this.jhipsterConfig.creationTimestamp) : new Date();
+        const changelogDate = formatDateForChangelog(changelogDateDate);
+        // Create entity definition for built-in entity to make easier to deal with relationships.
+        const user = {
+            name: 'User',
+            entityTableName: `${this.getTableName(this.jhipsterConfig.jhiPrefix)}_user`,
+            relationships: [],
+            changelogDate,
+        };
+
+        loadRequiredConfigIntoEntity(user, this.jhipsterConfig);
+        // Fallback to defaults for test cases.
+        loadRequiredConfigIntoEntity(user, defaultConfig);
+
+        const userIdType =
+            user.authenticationType === 'oauth2' || user.databaseType !== 'sql' ? 'String' : this.getPkType(user.databaseType);
+        const fieldValidateRulesMaxlength = userIdType === 'String' ? 100 : undefined;
+
+        user.fields = [
+            {
+                fieldName: 'id',
+                fieldType: userIdType,
+                fieldValidateRulesMaxlength,
+                fieldTranslationKey: 'global.field.id',
+                fieldNameHumanized: 'ID',
+                id: true,
+            },
+            {
+                fieldName: 'login',
+                fieldType: 'String',
+            },
+        ];
+
+        prepareEntityForTemplates(user, this);
+        user.fields.forEach(field => {
+            prepareFieldForTemplates(user, field, this);
+        });
+        this.configOptions.sharedEntities.User = user;
+    }
+
+    /**
+     * Convert to Java bean name case
+     *
+     * Handle the specific case when the second letter is capitalized
+     * See http://stackoverflow.com/questions/2948083/naming-convention-for-getters-setters-in-java
+     *
+     * @param {string} beanName
+     * @return {string}
+     */
+    javaBeanCase(beanName) {
+        const secondLetter = beanName.charAt(1);
+        if (secondLetter === secondLetter.toUpperCase()) {
+            return beanName;
+        }
+        return _.upperFirst(beanName);
+    }
+
+    /**
+     * Create a java getter of reference.
+     *
+     * @param {object} reference
+     * @return {string}
+     */
+    buildJavaGet(reference) {
+        return reference.path.map(partialPath => `get${this.javaBeanCase(partialPath)}()`).join('.');
+    }
+
+    /**
+     * Create a dotted path of reference.
+     *
+     * @param {object} reference
+     * @return {string}
+     */
+    buildReferencePath(reference) {
+        return reference.path.join('.');
+    }
+
+    /**
+     * Create a java getter method of reference.
+     *
+     * @param {object} reference
+     * @param {string} type
+     * @return {string}
+     */
+    buildJavaGetter(reference, type = reference.type) {
+        return `${type} get${this.javaBeanCase(reference.name)}()`;
+    }
+
+    /**
+     * Create a java getter method of reference.
+     *
+     * @param {object} reference
+     * @param {string} valueDefinition
+     * @return {string}
+     */
+    buildJavaSetter(reference, valueDefinition = `${reference.type} ${reference.name}`) {
+        return `set${this.javaBeanCase(reference.name)}(${valueDefinition})`;
+    }
+
+    /**
+     * Create a angular form path getter method of reference.
+     *
+     * @param {object} reference
+     * @param {string[]} valueDefinition
+     * @return {string}
+     */
+    buildAngularFormPath(reference, prefix = []) {
+        const formPath = [...prefix, ...reference.path].join("', '");
+        return `'${formPath}'`;
     }
 };

@@ -105,6 +105,7 @@ module.exports = class JHipsterClientGenerator extends BaseBlueprintGenerator {
         return {
             askForModuleName: prompts.askForModuleName,
             askForClient: prompts.askForClient,
+            askForAdminUi: prompts.askForAdminUi,
             askForClientTheme: prompts.askForClientTheme,
             askForClientThemeVariant: prompts.askForClientThemeVariant,
         };
@@ -171,6 +172,10 @@ module.exports = class JHipsterClientGenerator extends BaseBlueprintGenerator {
                 this.loadTranslationConfig();
             },
 
+            createUserManagementEntities() {
+                this.createUserManagementEntities();
+            },
+
             validateSkipServer() {
                 if (
                     this.jhipsterConfig.skipServer &&
@@ -220,7 +225,6 @@ module.exports = class JHipsterClientGenerator extends BaseBlueprintGenerator {
                 this.BUILD_DIR = this.getBuildDirectoryForBuildTool(this.buildTool);
 
                 this.styleSheetExt = 'scss';
-                this.pkType = this.getPkType(this.databaseType);
                 this.apiUaaPath = `${this.authenticationType === 'uaa' ? `services/${this.uaaBaseName.toLowerCase()}/` : ''}`;
                 this.DIST_DIR = this.getResourceBuildDirectoryForBuildTool(this.buildTool) + constants.CLIENT_DIST_DIR;
 
@@ -248,6 +252,12 @@ module.exports = class JHipsterClientGenerator extends BaseBlueprintGenerator {
     _default() {
         return {
             ...super._missingPreDefault(),
+
+            loadUserManagementEntities() {
+                if (!this.configOptions.sharedEntities) return;
+                // Make user entity available to templates.
+                this.user = this.configOptions.sharedEntities.User;
+            },
 
             insight() {
                 statistics.sendSubGenEvent('generator', 'client', {
