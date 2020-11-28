@@ -54,8 +54,7 @@ import { I<%= entityAngularName %>, <%= entityAngularName %> } from 'app/shared/
 import { <%= entityAngularName %>Service } from './<%= entityFileName %>.service';
 <%_ if (fieldsContainBlob) { _%>
 import { AlertError } from 'app/shared/alert/alert-error.model';
-import { EventManager } from 'app/core/event-manager/event-manager.service';
-import { EventWithContent } from 'app/core/event-manager/event-with-content.model';
+import { EventManager, EventWithContent } from 'app/core/util/event-manager.service';
 import { DataUtils, FileLoadError } from 'app/core/util/data-util.service';
 <%_ } _%>
 <%_
@@ -250,8 +249,8 @@ _%>
         return this.dataUtils.byteSize(base64String);
     }
 
-    openFile(contentType: string, base64String: string): void {
-        this.dataUtils.openFile(contentType, base64String);
+    openFile(base64String: string, contentType: string): void {
+        this.dataUtils.openFile(base64String, contentType);
     }
 
     setFileData(event: Event, field: string, isImage: boolean): void {

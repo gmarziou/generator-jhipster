@@ -47,7 +47,9 @@ limitations under the License.
     "bootswatch": "VERSION_MANAGED_BY_CLIENT_ANGULAR#dependencies#bootstrap",
     <%_ } _%>
     "dayjs": "VERSION_MANAGED_BY_CLIENT_COMMON",
+    <%_ if (authenticationType === 'session' && websocket === 'spring-websocket') { _%>
     "ngx-cookie-service": "VERSION_MANAGED_BY_CLIENT_ANGULAR",
+    <%_ } _%>
     "ngx-infinite-scroll": "VERSION_MANAGED_BY_CLIENT_ANGULAR",
     "ngx-webstorage": "VERSION_MANAGED_BY_CLIENT_ANGULAR",
     "rxjs": "VERSION_MANAGED_BY_CLIENT_ANGULAR",
@@ -161,6 +163,7 @@ limitations under the License.
     <%_ } _%>
     "jest": "jest --coverage --logHeapUsage --maxWorkers=2 --config <%= CLIENT_TEST_SRC_DIR %>jest.conf.js",
     "start": "<%= clientPackageManager %> run webpack:dev",
+    "start-hmr": "ng serve --hmr",
     "start-tls": "<%= clientPackageManager %> run webpack:dev -- --env.tls",
     <%_ if (skipServer) { _%>
     "sonar": "sonar-scanner",

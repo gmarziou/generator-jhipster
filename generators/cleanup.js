@@ -118,6 +118,9 @@ function cleanupOldFiles(generator) {
             generator.removeFile(`${ANGULAR_DIR}shared/login/login.component.ts`);
             generator.removeFile(`${ANGULAR_DIR}shared/login/login.component.html`);
             generator.removeFile(`${ANGULAR_DIR}core/auth/user-route-access-service.ts`);
+            if (generator.jhipsterConfig.authenticationType !== 'session' || generator.jhipsterConfig.websocket !== 'spring-websocket') {
+                generator.removeFile(`${ANGULAR_DIR}core/auth/csrf.service.ts`);
+            }
             generator.removeFolder(`${ANGULAR_DIR}core/login`);
             generator.removeFolder(`${ANGULAR_DIR}blocks`);
             generator.removeFolder(`${ANGULAR_DIR}core/date`);
@@ -127,7 +130,10 @@ function cleanupOldFiles(generator) {
             generator.removeFolder(`${ANGULAR_DIR}shared/language`);
             generator.removeFolder(`${ANGULAR_DIR}shared/constants`);
             generator.removeFolder(`${ANGULAR_DIR}shared/util`);
-            generator.removeFile(`${ANGULAR_DIR}config/dayjs.ts`);
+            generator.removeFile(`${ANGULAR_DIR}core/core.module.ts`);
+            generator.removeFile(`${ANGULAR_DIR}vendor.ts`);
+            generator.removeFile(`${ANGULAR_DIR}app.main.ts`);
+            generator.removeFile(`${ANGULAR_DIR}polyfills.ts`);
             generator.removeFile(`${CLIENT_WEBPACK_DIR}webpack.common.js`);
             generator.removeFile(`${CLIENT_WEBPACK_DIR}webpack.dev.js`);
             generator.removeFile(`${CLIENT_WEBPACK_DIR}webpack.prod.js`);
@@ -145,6 +151,12 @@ function cleanupOldFiles(generator) {
             generator.removeFile(`${CLIENT_TEST_SRC_DIR}jest-global-mocks.ts`);
             generator.removeFolder(`${CLIENT_TEST_SRC_DIR}spec/helpers`);
             generator.removeFile('tslint.json');
+
+            // unreleased files and folders cleanup for v7 developers
+            generator.removeFile(`${ANGULAR_DIR}config/dayjs.ts`);
+            generator.removeFile(`${ANGULAR_DIR}shared/duration.pipe.ts`);
+            generator.removeFolder(`${ANGULAR_DIR}core/event-manager`);
+            generator.removeFolder(`${CLIENT_TEST_SRC_DIR}spec/app/core/event-manager`);
         } else if (generator.jhipsterConfig.clientFramework === REACT) {
             generator.removeFile(`${REACT_DIR}modules/administration/audits/audits.tsx`);
             generator.removeFile(`${CLIENT_TEST_SRC_DIR}spec/enzyme-setup.ts`);

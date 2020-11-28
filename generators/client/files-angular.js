@@ -28,6 +28,7 @@ const files = {
     common: [
         {
             templates: [
+                '.npmrc',
                 'package.json',
                 'tsconfig.json',
                 'tsconfig.app.json',
@@ -69,8 +70,12 @@ const files = {
     ],
     angularApp: [
         {
+            path: CLIENT_MAIN_SRC_DIR,
+            templates: ['main.ts', 'polyfills.ts'],
+        },
+        {
             path: ANGULAR_DIR,
-            templates: ['app.main.ts', 'app.module.ts', 'app-routing.module.ts', 'app.constants.ts', 'polyfills.ts', 'vendor.ts'],
+            templates: ['app.module.ts', 'app-routing.module.ts', 'app.constants.ts'],
         },
     ],
     angularMain: [
@@ -295,12 +300,12 @@ const files = {
         {
             path: ANGULAR_DIR,
             templates: [
-                'core/core.module.ts',
                 'core/user/account.model.ts',
                 'core/user/authority.model.ts',
                 'core/util/data-util.service.ts',
                 'core/util/parse-links.service.ts',
                 'core/util/alert.service.ts',
+                'core/util/event-manager.service.ts',
 
                 // config
                 'core/config/uib-pagination.config.ts',
@@ -320,10 +325,6 @@ const files = {
                 // request
                 'core/request/request-util.ts',
                 'core/request/request.model.ts',
-
-                // event-manager
-                'core/event-manager/event-manager.service.ts',
-                'core/event-manager/event-with-content.model.ts',
             ],
         },
         {
@@ -370,7 +371,6 @@ const files = {
         {
             path: ANGULAR_DIR,
             templates: [
-                'core/auth/csrf.service.ts',
                 'core/auth/state-storage.service.ts',
                 'shared/has-any-authority.directive.ts',
                 'core/auth/account.service.ts',
@@ -386,6 +386,11 @@ const files = {
             condition: generator => generator.authenticationType === 'session' || generator.authenticationType === 'oauth2',
             path: ANGULAR_DIR,
             templates: ['core/auth/auth-session.service.ts'],
+        },
+        {
+            condition: generator => generator.authenticationType === 'session' && generator.websocket === 'spring-websocket',
+            path: ANGULAR_DIR,
+            templates: ['core/auth/csrf.service.ts'],
         },
     ],
     clientTestFw: [
@@ -407,7 +412,7 @@ const files = {
             templates: [
                 'jest.conf.js',
                 'spec/app/core/user/account.service.spec.ts',
-                'spec/app/core/event-manager/event-manager.service.spec.ts',
+                'spec/app/core/util/event-manager.service.spec.ts',
                 'spec/app/core/util/data-util.service.spec.ts',
                 'spec/app/core/util/parse-links.service.spec.ts',
                 'spec/app/core/util/alert.service.spec.ts',
