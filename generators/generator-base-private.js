@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,7 +43,8 @@ const JSONToJDLEntityConverter = require('../jdl/converters/json-to-jdl-entity-c
 const JSONToJDLOptionConverter = require('../jdl/converters/json-to-jdl-option-converter');
 const { prepareEntityForTemplates, loadRequiredConfigIntoEntity } = require('../utils/entity');
 const { prepareFieldForTemplates } = require('../utils/field');
-const { formatDateForChangelog } = require('../utils/liquibase');
+const { formatDateForChangelog, prepareFieldForLiquibaseTemplates } = require('../utils/liquibase');
+const { stringify } = require('../utils');
 
 const SERVER_TEST_SRC_DIR = constants.SERVER_TEST_SRC_DIR;
 const ANGULAR = constants.SUPPORTED_CLIENT_FRAMEWORKS.ANGULAR;
@@ -239,7 +240,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         if (this.clientFramework !== ANGULAR) {
             return;
         }
-        const fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/core/config/language.constants.ts`;
+        const fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/config/language.constants.ts`;
         try {
             let content = 'export const LANGUAGES: string[] = [\n';
             languages.forEach((language, i) => {
@@ -309,7 +310,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
     updateLanguagesInLanguagePipe(languages) {
         const fullPath =
             this.clientFramework === ANGULAR
-                ? `${this.CLIENT_MAIN_SRC_DIR}app/shared/find-language-from-key.pipe.ts`
+                ? `${this.CLIENT_MAIN_SRC_DIR}app/shared/language/find-language-from-key.pipe.ts`
                 : `${this.CLIENT_MAIN_SRC_DIR}/app/config/translation.ts`;
         try {
             let content = '{\n';
@@ -426,7 +427,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         if (this.clientFramework === VUE) {
             fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/shared/config/dayjs.ts`;
         } else if (this.clientFramework === ANGULAR) {
-            fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/core/config/dayjs.ts`;
+            fullPath = `${this.CLIENT_MAIN_SRC_DIR}app/config/dayjs.ts`;
         }
         try {
             const content = languages.reduce(
@@ -1693,6 +1694,7 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
         prepareEntityForTemplates(user, this);
         user.fields.forEach(field => {
             prepareFieldForTemplates(user, field, this);
+            prepareFieldForLiquibaseTemplates(user, field);
         });
         this.configOptions.sharedEntities.User = user;
     }
@@ -1766,5 +1768,16 @@ module.exports = class JHipsterBasePrivateGenerator extends Generator {
     buildAngularFormPath(reference, prefix = []) {
         const formPath = [...prefix, ...reference.path].join("', '");
         return `'${formPath}'`;
+    }
+
+    /**
+     * @private
+     *
+     * Print entity json representation.
+     *
+     * @param {object} entity
+     */
+    debugEntity(entity) {
+        this.log(stringify(entity));
     }
 };

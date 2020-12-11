@@ -1,14 +1,14 @@
 /**
  * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
- * This file is part of the JHipster project, see http://www.jhipster.tech/
+ * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -66,7 +66,6 @@ describe('JDLImporter', () => {
                             relationshipName: 'location',
                             otherEntityName: 'location',
                             relationshipType: 'many-to-one',
-                            otherEntityField: 'id',
                             otherEntityRelationshipName: 'country',
                         },
                     ],
@@ -109,23 +108,23 @@ describe('JDLImporter', () => {
                     ],
                     relationships: [
                         {
+                            options: {
+                                id: '42',
+                            },
                             relationshipType: 'one-to-one',
                             relationshipName: 'location',
                             otherEntityName: 'location',
-                            otherEntityField: 'id',
                             ownerSide: true,
                             otherEntityRelationshipName: 'department',
                         },
                         {
                             relationshipType: 'one-to-many',
                             javadoc: 'A relationship',
-                            otherEntityField: 'id',
                             relationshipName: 'employee',
                             otherEntityName: 'employee',
                             otherEntityRelationshipName: 'department',
                         },
                         {
-                            otherEntityField: 'id',
                             otherEntityName: 'jobHistory',
                             otherEntityRelationshipName: 'department',
                             ownerSide: false,
@@ -180,7 +179,6 @@ describe('JDLImporter', () => {
                     ],
                     relationships: [
                         {
-                            otherEntityField: 'id',
                             relationshipType: 'one-to-many',
                             relationshipName: 'job',
                             otherEntityName: 'job',
@@ -206,10 +204,8 @@ describe('JDLImporter', () => {
                             relationshipName: 'department',
                             otherEntityName: 'department',
                             otherEntityRelationshipName: 'employee',
-                            otherEntityField: 'id',
                         },
                         {
-                            otherEntityField: 'id',
                             otherEntityName: 'jobHistory',
                             otherEntityRelationshipName: 'emp',
                             ownerSide: false,
@@ -275,7 +271,6 @@ describe('JDLImporter', () => {
                             relationshipName: 'history',
                             otherEntityName: 'jobHistory',
                             otherEntityRelationshipName: 'job',
-                            otherEntityField: 'id',
                             ownerSide: false,
                         },
                     ],
@@ -318,7 +313,6 @@ describe('JDLImporter', () => {
                             otherEntityRelationshipName: 'jobHistory',
                             relationshipName: 'department',
                             otherEntityName: 'department',
-                            otherEntityField: 'id',
                             ownerSide: true,
                         },
                         {
@@ -326,7 +320,6 @@ describe('JDLImporter', () => {
                             otherEntityRelationshipName: 'history',
                             relationshipName: 'job',
                             otherEntityName: 'job',
-                            otherEntityField: 'id',
                             ownerSide: true,
                         },
                         {
@@ -372,11 +365,20 @@ describe('JDLImporter', () => {
                     ],
                     relationships: [
                         {
-                            otherEntityField: 'id',
                             relationshipType: 'one-to-many',
                             relationshipName: 'country',
                             otherEntityName: 'country',
                             otherEntityRelationshipName: 'location',
+                        },
+                        {
+                            options: {
+                                id: true,
+                            },
+                            otherEntityName: 'department',
+                            otherEntityRelationshipName: 'location',
+                            ownerSide: false,
+                            relationshipName: 'department',
+                            relationshipType: 'one-to-one',
                         },
                     ],
                     name: 'Location',
@@ -405,7 +407,6 @@ describe('JDLImporter', () => {
                             otherEntityName: 'country',
                             otherEntityRelationshipName: 'area',
                             relationshipType: 'many-to-one',
-                            otherEntityField: 'id',
                         },
                     ],
                     name: 'Region',
@@ -2014,6 +2015,48 @@ entity A
                 expect(caughtError.message).to.equal(
                     "MismatchedTokenException: Found an invalid token 'unknownOption', at line: 5 and column: 5.\n\tPlease make sure your JDL content does not use invalid characters, keywords or options."
                 );
+            });
+        });
+        context('when parsing relationships with annotations and options', () => {
+            let relationshipOnSource;
+            let relationshipOnDestination;
+
+            before(() => {
+                const content = `entity A
+entity B
+
+relationship OneToOne {
+  @id A{b} to @NotId(value) @Something B{a} with jpaDerivedIdentifier
+}
+`;
+                const importer = createImporterFromContent(content, { databaseType: 'postgresql', applicationName: 'toto' });
+                const imported = importer.import();
+                relationshipOnSource = imported.exportedEntities[0].relationships[0];
+                relationshipOnDestination = imported.exportedEntities[1].relationships[0];
+            });
+
+            after(() => {
+                fse.removeSync('.jhipster');
+            });
+
+            it('should export them', () => {
+                expect(relationshipOnSource).to.deep.equal({
+                    options: { notId: 'value', something: true },
+                    otherEntityName: 'b',
+                    otherEntityRelationshipName: 'a',
+                    ownerSide: true,
+                    relationshipName: 'b',
+                    relationshipType: 'one-to-one',
+                    useJPADerivedIdentifier: true,
+                });
+                expect(relationshipOnDestination).to.deep.equal({
+                    options: { id: true },
+                    otherEntityName: 'a',
+                    otherEntityRelationshipName: 'b',
+                    ownerSide: false,
+                    relationshipName: 'a',
+                    relationshipType: 'one-to-one',
+                });
             });
         });
     });

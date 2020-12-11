@@ -8,7 +8,7 @@
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+      https://www.apache.org/licenses/LICENSE-2.0
 
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
@@ -619,16 +619,16 @@ relationships.forEach((relationship, idx) => {
         <%_ if (relationship.otherRelationship && !relationship.reference.owned) { _%>
         if (this.<%= relationshipFieldNamePlural %> != null) {
             <%_ if (relationship.otherRelationship.reference.collection) { _%>
-            this.<%= relationshipFieldNamePlural %>.forEach(<%= otherEntityName %> -> <%= otherEntityName %>.remove<%= otherEntityRelationshipNameCapitalized %>(this));
+            this.<%= relationshipFieldNamePlural %>.forEach(i -> i.remove<%= otherEntityRelationshipNameCapitalized %>(this));
             <%_ } else { _%>
-            this.<%= relationshipFieldNamePlural %>.forEach(<%= otherEntityName %> -> <%= otherEntityName %>.set<%= otherEntityRelationshipNameCapitalized %>(null));
+            this.<%= relationshipFieldNamePlural %>.forEach(i -> i.set<%= otherEntityRelationshipNameCapitalized %>(null));
             <%_ } _%>
         }
         if (<%= otherEntityNamePlural %> != null) {
             <%_ if (relationship.otherRelationship.reference.collection) { _%>
-            <%= otherEntityNamePlural %>.forEach(<%= otherEntityName %> -> <%= otherEntityName %>.add<%= otherEntityRelationshipNameCapitalized %>(this));
+            <%= otherEntityNamePlural %>.forEach(i -> i.add<%= otherEntityRelationshipNameCapitalized %>(this));
             <%_ } else { _%>
-            <%= otherEntityNamePlural %>.forEach(<%= otherEntityName %> -> <%= otherEntityName %>.set<%= otherEntityRelationshipNameCapitalized %>(this));
+            <%= otherEntityNamePlural %>.forEach(i -> i.set<%= otherEntityRelationshipNameCapitalized %>(this));
             <%_ } _%>
         }
         <%_ } _%>

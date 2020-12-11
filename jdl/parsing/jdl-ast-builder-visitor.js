@@ -1,14 +1,14 @@
 /**
  * Copyright 2013-2020 the original author or authors from the JHipster project.
  *
- * This file is part of the JHipster project, see http://www.jhipster.tech/
+ * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -265,20 +265,28 @@ module.exports = class JDLAstBuilderVisitor extends BaseJDLCSTVisitor {
     }
 
     relationshipBody(context) {
-        const options = [];
-        if (context.annotationDeclaration) {
-            context.annotationDeclaration.forEach(contextObject => {
-                options.push(this.visit(contextObject));
-            });
-        }
+        const optionsForTheSourceSide = context.annotationOnSourceSide ? context.annotationOnSourceSide.map(this.visit, this) : [];
+        const optionsForTheDestinationSide = context.annotationOnDestinationSide
+            ? context.annotationOnDestinationSide.map(this.visit, this)
+            : [];
+
         const from = this.visit(context.from);
         const to = this.visit(context.to);
 
+        const relationshipOptions = [];
         if (context.relationshipOptions) {
-            this.visit(context.relationshipOptions).forEach(o => options.push(o));
+            this.visit(context.relationshipOptions).forEach(option => relationshipOptions.push(option));
         }
 
-        return { from, to, options };
+        return {
+            from,
+            to,
+            options: {
+                global: relationshipOptions,
+                source: optionsForTheSourceSide,
+                destination: optionsForTheDestinationSide,
+            },
+        };
     }
 
     relationshipSide(context) {
