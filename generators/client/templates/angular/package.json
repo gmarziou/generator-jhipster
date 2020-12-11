@@ -24,7 +24,7 @@
     "@typescript-eslint/eslint-plugin": "4.9.1",
     "browser-sync": "2.26.13",
     "browser-sync-webpack-plugin": "2.2.2",
-    "copy-webpack-plugin": "7.0.0",
+    "copy-webpack-plugin": "6.4.0",
     "eslint": "7.15.0",
     "eslint-config-prettier": "7.0.0",
     "eslint-webpack-plugin": "2.4.1",
@@ -36,6 +36,7 @@
     "merge-jsons-webpack-plugin": "1.0.21",
     "rimraf": "3.0.2",
     "simple-progress-webpack-plugin": "1.1.2",
+    "webpack": "4.44.2",
     "webpack-bundle-analyzer": "4.2.0",
     "webpack-notifier": "1.12.0"
   }
